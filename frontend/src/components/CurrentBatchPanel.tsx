@@ -1,25 +1,25 @@
 import React from 'react';
-import { Clock, Users, ArrowUpRight, ArrowDownLeft, XCircle, Play } from 'lucide-react';
+import { Clock, Users, ArrowUpRight, ArrowDownLeft, XCircle, RotateCcw, Zap, Pause } from 'lucide-react';
 import type { OrderItem } from '../types';
 
 interface CurrentBatchPanelProps {
   batchId: number;
   batchStatus: string;
   secondsRemaining: number;
+  timerSpeed: number;
+  isTimerPaused: boolean;
   orders: OrderItem[];
   onCancelOrder: (orderId: number) => void;
-  onCloseBatchNow: () => void;
-  isClosingBatch: boolean;
 }
 
 export const CurrentBatchPanel: React.FC<CurrentBatchPanelProps> = ({
   batchId,
   batchStatus,
   secondsRemaining,
+  timerSpeed,
+  isTimerPaused,
   orders,
-  onCancelOrder,
-  onCloseBatchNow,
-  isClosingBatch
+  onCancelOrder
 }) => {
   const currentOrders = orders.filter((o) => o.batchId === batchId && o.status !== 'CANCELLED');
   const buyOrders = currentOrders.filter((o) => o.isBuy);
@@ -38,29 +38,52 @@ export const CurrentBatchPanel: React.FC<CurrentBatchPanelProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h2>Current Auction Batch #{batchId}</h2>
             <span className="badge badge-gold">{batchStatus}</span>
+            {batchId > 1 && (
+              <span className="badge badge-blue" style={{ fontSize: '0.65rem' }}>
+                <RotateCcw size={10} /> Active Rollovers
+              </span>
+            )}
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Orders are collected until the batch closes and clears at a uniform price
+            Orders are collected until the batch timer expires and clears at a uniform price
           </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-            <Clock size={15} color="#38bdf8" />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Closing in:</span>
-            <span className="font-mono" style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.875rem' }}>{secondsRemaining}s</span>
-          </div>
-
-          <button
-            onClick={onCloseBatchNow}
-            disabled={isClosingBatch}
-            className="btn btn-ghost"
-            style={{ borderColor: 'rgba(56, 189, 248, 0.3)', color: '#38bdf8' }}
-            title="Trigger batch clearing immediately"
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 14px',
+              background: isTimerPaused ? 'rgba(251, 191, 36, 0.1)' : 'var(--bg-input)',
+              border: `1px solid ${isTimerPaused ? 'rgba(251, 191, 36, 0.3)' : 'var(--border-subtle)'}`,
+              borderRadius: 'var(--radius-md)'
+            }}
           >
-            <Play size={14} />
-            <span>{isClosingBatch ? 'Clearing...' : 'Close Batch Now'}</span>
-          </button>
+            {isTimerPaused ? <Pause size={14} color="#fbbf24" /> : <Clock size={15} color="#38bdf8" />}
+            <span style={{ fontSize: '0.75rem', color: isTimerPaused ? '#fbbf24' : 'var(--text-muted)' }}>
+              {isTimerPaused ? 'Timer Paused:' : 'Closing in:'}
+            </span>
+            <span className="font-mono" style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.9375rem' }}>
+              {secondsRemaining}s
+            </span>
+            {timerSpeed > 1 && !isTimerPaused && (
+              <span
+                style={{
+                  fontSize: '0.6875rem',
+                  color: '#fbbf24',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2px'
+                }}
+              >
+                <Zap size={11} fill="currentColor" />
+                {timerSpeed}x
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -94,7 +117,7 @@ export const CurrentBatchPanel: React.FC<CurrentBatchPanelProps> = ({
 
         {currentOrders.length === 0 ? (
           <div style={{ padding: '36px 16px', textAlign: 'center', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-            No orders submitted yet in Batch #{batchId}. Submit an order on the left or click "Run MEV Demo".
+            No orders in Batch #{batchId}. Submit an order on the left or use the Demo Controller above.
           </div>
         ) : (
           <div className="table-container">
@@ -122,6 +145,11 @@ export const CurrentBatchPanel: React.FC<CurrentBatchPanelProps> = ({
                       ) : (
                         `${order.trader.slice(0, 6)}...${order.trader.slice(-4)}`
                       )}
+                      {order.rolledFromBatchId && (
+                        <span style={{ marginLeft: '6px', fontSize: '0.65rem', color: '#fbbf24', background: 'rgba(251, 191, 36, 0.1)', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(251, 191, 36, 0.2)' }}>
+                          Rolled #{order.rolledFromBatchId}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <span className={`badge ${order.isBuy ? 'badge-green' : 'badge-rose'}`}>
@@ -133,7 +161,9 @@ export const CurrentBatchPanel: React.FC<CurrentBatchPanelProps> = ({
                     </td>
                     <td className="font-mono text-right">${order.limitPrice.toFixed(2)}</td>
                     <td className="text-center">
-                      <span className="badge badge-gold">{order.status}</span>
+                      <span className="badge badge-gold">
+                        {order.rolledFromBatchId ? 'ROLLED' : order.status}
+                      </span>
                     </td>
                     <td className="text-right">
                       <button

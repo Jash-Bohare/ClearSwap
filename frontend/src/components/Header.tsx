@@ -1,15 +1,19 @@
 import React from 'react';
-import { Layers, ShieldCheck, Flame, Wallet, Play } from 'lucide-react';
+import { Layers, ShieldCheck, Flame, Wallet, Server, Coins } from 'lucide-react';
 
 interface HeaderProps {
   currentBatchId: number;
   batchStatus: string;
   onOpenSandwichModal: () => void;
   onOpenGasModal: () => void;
-  onRunDemo: () => void;
-  isDemoRunning: boolean;
   walletAddress: string | null;
   onConnectWallet: () => void;
+  isAnvilConnected: boolean;
+  blockNumber: number;
+  wethBalance: string;
+  usdcBalance: string;
+  onMintTokens: () => void;
+  isMinting: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -17,10 +21,14 @@ export const Header: React.FC<HeaderProps> = ({
   batchStatus,
   onOpenSandwichModal,
   onOpenGasModal,
-  onRunDemo,
-  isDemoRunning,
   walletAddress,
-  onConnectWallet
+  onConnectWallet,
+  isAnvilConnected,
+  blockNumber,
+  wethBalance,
+  usdcBalance,
+  onMintTokens,
+  isMinting
 }) => {
   return (
     <header className="app-header">
@@ -39,8 +47,62 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Pitch Triggers, Live Batch Pill, and Wallet */}
+        {/* Pitch Triggers, Live On-Chain Node Pill, Faucet, and Wallet */}
         <div className="header-actions">
+          {/* Node Status Pill */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 10px',
+              borderRadius: 'var(--radius-sm)',
+              background: isAnvilConnected ? 'rgba(16, 185, 129, 0.12)' : 'rgba(56, 189, 248, 0.1)',
+              border: `1px solid ${isAnvilConnected ? 'rgba(16, 185, 129, 0.3)' : 'rgba(56, 189, 248, 0.2)'}`,
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              color: isAnvilConnected ? '#34d399' : '#38bdf8'
+            }}
+            title={isAnvilConnected ? 'Connected to local Anvil EVM (Chain ID 31337)' : 'Running in browser Stylus simulation mode'}
+          >
+            <Server size={13} />
+            <span>{isAnvilConnected ? `Anvil Live (#${blockNumber})` : 'Stylus Sim Mode'}</span>
+          </div>
+
+          {/* Trader Wallet Balance & Dev Faucet */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '5px 10px',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '0.6875rem',
+                fontFamily: 'var(--font-mono)'
+              }}
+              title="Your testing wallet balance"
+            >
+              <span style={{ color: '#38bdf8', fontWeight: 600 }}>{parseFloat(wethBalance).toFixed(2)} WETH</span>
+              <span style={{ color: 'var(--text-muted)' }}>|</span>
+              <span style={{ color: '#34d399', fontWeight: 600 }}>${parseFloat(usdcBalance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USDC</span>
+            </div>
+
+            <button
+              onClick={onMintTokens}
+              disabled={isMinting}
+              className="btn btn-ghost"
+              style={{ padding: '5px 8px', fontSize: '0.6875rem', gap: '4px' }}
+              title="Mint +100 WETH & +300k USDC to your testing wallet"
+            >
+              <Coins size={13} color="#fbbf24" />
+              <span>{isMinting ? 'Minting...' : 'Faucet'}</span>
+            </button>
+          </div>
+
+          {/* Value Proposition Presentation Modals */}
           <button
             onClick={onOpenSandwichModal}
             className="btn btn-danger-outline"
@@ -57,16 +119,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Flame size={16} />
             <span>Gas Benchmark</span>
-          </button>
-
-          <button
-            onClick={onRunDemo}
-            disabled={isDemoRunning}
-            className="btn btn-primary"
-            title="Inject canonical 6-order worked example from Spec 03 §17"
-          >
-            <Play size={15} fill="currentColor" />
-            <span>{isDemoRunning ? 'Injecting Orders...' : 'Run MEV Demo'}</span>
           </button>
 
           {/* Batch Status Pill */}
