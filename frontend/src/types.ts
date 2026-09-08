@@ -19,6 +19,7 @@ export interface FillItem {
   filledAmount: number; // in WETH
   clearingPrice: number; // in USDC
   quoteAmount: number; // in USDC
+  limitPrice?: number; // trader's original limit price in USDC
 }
 
 export interface BatchState {

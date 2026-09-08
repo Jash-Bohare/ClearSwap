@@ -127,7 +127,8 @@ export function computeDynamicClearing(
         isBuy: true,
         filledAmount: fillAmount,
         clearingPrice: pStar,
-        quoteAmount: Math.round(fillAmount * pStar * 100) / 100
+        quoteAmount: Math.round(fillAmount * pStar * 100) / 100,
+        limitPrice: b.limitPrice
       });
       updatedOrdersMap.set(b.id, { ...b, status: 'FILLED', filledAmount: fillAmount });
     }
@@ -145,7 +146,8 @@ export function computeDynamicClearing(
           isBuy: true,
           filledAmount: fillAmount,
           clearingPrice: pStar,
-          quoteAmount: Math.round(fillAmount * pStar * 100) / 100
+          quoteAmount: Math.round(fillAmount * pStar * 100) / 100,
+          limitPrice: b.limitPrice
         });
         updatedOrdersMap.set(b.id, {
           ...b,
@@ -182,7 +184,8 @@ export function computeDynamicClearing(
         isBuy: false,
         filledAmount: fillAmount,
         clearingPrice: pStar,
-        quoteAmount: Math.round(fillAmount * pStar * 100) / 100
+        quoteAmount: Math.round(fillAmount * pStar * 100) / 100,
+        limitPrice: s.limitPrice
       });
       updatedOrdersMap.set(s.id, { ...s, status: 'FILLED', filledAmount: fillAmount });
     }
@@ -200,7 +203,8 @@ export function computeDynamicClearing(
           isBuy: false,
           filledAmount: fillAmount,
           clearingPrice: pStar,
-          quoteAmount: Math.round(fillAmount * pStar * 100) / 100
+          quoteAmount: Math.round(fillAmount * pStar * 100) / 100,
+          limitPrice: s.limitPrice
         });
         updatedOrdersMap.set(s.id, {
           ...s,
