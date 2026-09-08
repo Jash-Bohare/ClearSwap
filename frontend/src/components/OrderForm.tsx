@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { ArrowDown, ArrowUp, Info, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Info, AlertCircle, CheckCircle2, Wallet } from 'lucide-react';
 
 interface OrderFormProps {
   currentBatchId: number;
   onSubmitOrder: (isBuy: boolean, amount: number, limitPrice: number) => Promise<void>;
   isSubmitting: boolean;
+  availableWeth: number;
+  availableUsdc: number;
 }
 
 export const OrderForm: React.FC<OrderFormProps> = ({
   currentBatchId,
   onSubmitOrder,
-  isSubmitting
+  isSubmitting,
+  availableWeth,
+  availableUsdc
 }) => {
   const [isBuy, setIsBuy] = useState<boolean>(true);
   const [amount, setAmount] = useState<string>('1.0');
@@ -41,6 +45,17 @@ export const OrderForm: React.FC<OrderFormProps> = ({
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to submit order');
+    }
+  };
+
+  const handlePercentage = (pct: number) => {
+    const numPrice = parseFloat(limitPrice) || 3000;
+    if (isBuy) {
+      const maxWeth = availableUsdc > 0 && numPrice > 0 ? (availableUsdc * pct) / numPrice : 0;
+      setAmount((Math.floor(maxWeth * 1000) / 1000).toString());
+    } else {
+      const sellWeth = availableWeth * pct;
+      setAmount((Math.floor(sellWeth * 1000) / 1000).toString());
     }
   };
 
@@ -80,11 +95,14 @@ export const OrderForm: React.FC<OrderFormProps> = ({
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Quantity Field */}
+        {/* Quantity Field & Available Balance */}
         <div className="form-group">
           <div className="form-label-row">
             <span>Order Quantity</span>
-            <span>Token: WETH</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-muted)' }}>
+              <Wallet size={11} color="#38bdf8" />
+              <span>Avail: {isBuy ? `$${availableUsdc.toLocaleString()} USDC` : `${availableWeth.toFixed(2)} WETH`}</span>
+            </span>
           </div>
           <div className="input-container">
             <input
@@ -99,6 +117,21 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             />
             <span className="input-token-suffix">WETH</span>
           </div>
+        </div>
+
+        {/* Quick Percentage Shortcuts */}
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
+          {[0.25, 0.5, 0.75, 1.0].map((pct, idx) => (
+            <button
+              key={pct}
+              type="button"
+              onClick={() => handlePercentage(pct)}
+              className="preset-pill-btn"
+              style={{ padding: '4px 6px', fontSize: '0.6875rem' }}
+            >
+              {idx === 3 ? 'MAX' : `${pct * 100}%`}
+            </button>
+          ))}
         </div>
 
         {/* Limit Price Field */}

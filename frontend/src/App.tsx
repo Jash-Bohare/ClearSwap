@@ -274,7 +274,6 @@ export const App: React.FC = () => {
           // Received bought WETH
           deltaWeth += fill.filledAmount;
           // Actual quote cost was fill.filledAmount * clearingPrice
-          // (The locked amount was fill.filledAmount * limitPrice, which is released as order status changes from PENDING to FILLED)
           const actualCost = fill.filledAmount * fill.clearingPrice;
           deltaUsdc -= actualCost;
         } else {
@@ -389,6 +388,8 @@ export const App: React.FC = () => {
             currentBatchId={currentBatchId}
             onSubmitOrder={handleSubmitOrder}
             isSubmitting={isSubmitting}
+            availableWeth={availableWeth}
+            availableUsdc={availableUsdc}
           />
           <CurrentBatchPanel
             batchId={currentBatchId}
