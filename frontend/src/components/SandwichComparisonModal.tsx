@@ -20,98 +20,96 @@ export const SandwichComparisonModal: React.FC<SandwichComparisonModalProps> = (
   const totalMevExtracted = sequentialLossPerWETH * victimAmount;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-2xl p-6 space-y-6 border-rose-500/40 shadow-2xl relative animate-in fade-in zoom-in-95">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400">
-              <ShieldCheck className="w-5 h-5" />
+        <div className="modal-header">
+          <div className="modal-title-group">
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fb7185' }}>
+              <ShieldCheck size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white font-heading">Sandwich Attack Comparison Panel</h2>
-              <p className="text-xs text-slate-400">Replaying identical batch orders against a sequential AMM (Uniswap v2)</p>
+              <h3>Sandwich Attack Comparison</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Replaying identical batch orders against a sequential AMM pool</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="modal-close-btn">
+            <X size={18} />
           </button>
         </div>
 
-        {/* Side-by-side comparison cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Traditional Sequential AMM Card */}
-          <div className="p-5 rounded-xl bg-rose-950/30 border border-rose-500/30 space-y-3">
-            <div className="flex items-center justify-between text-xs font-bold text-rose-400">
-              <span className="flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-rose-400" />
+        {/* Side-by-Side Cards */}
+        <div className="comparison-grid">
+          {/* Sequential AMM */}
+          <div className="comparison-card card-vulnerable">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong style={{ color: '#fb7185', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem' }}>
+                <AlertTriangle size={15} />
                 Standard Sequential DEX
-              </span>
-              <span className="badge badge-sell">Vulnerable</span>
+              </strong>
+              <span className="badge badge-rose">Vulnerable</span>
             </div>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Execution Mechanism</span>
-                <span className="font-semibold text-rose-300">Serial Price-Time Priority</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Execution Type</span>
+                <span>Serial Priority</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Victim (B1) Execution Price</span>
-                <span className="font-mono text-rose-400 font-bold">${sequentialPrice.toFixed(2)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Victim (B1) Price</span>
+                <span className="font-mono" style={{ color: '#fb7185', fontWeight: 700 }}>${sequentialPrice.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Bot Sandwich Slippage</span>
-                <span className="font-mono text-rose-400 font-bold">+$75.40 / WETH</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Sandwich Slippage</span>
+                <span className="font-mono" style={{ color: '#fb7185', fontWeight: 700 }}>+$75.40 / WETH</span>
               </div>
-              <div className="pt-2 border-t border-rose-500/20 flex justify-between items-center">
-                <span className="text-slate-300 font-semibold">Value Extracted by Bot</span>
-                <span className="font-mono text-rose-400 font-extrabold text-sm">-${totalMevExtracted.toFixed(2)} USDC</span>
+              <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(244, 63, 94, 0.2)', display: 'flex', justifyContent: 'space-between' }}>
+                <strong style={{ color: '#ffffff' }}>Value Lost to Bot</strong>
+                <span className="font-mono" style={{ color: '#fb7185', fontWeight: 800, fontSize: '0.875rem' }}>-${totalMevExtracted.toFixed(2)} USDC</span>
               </div>
             </div>
           </div>
 
-          {/* ClearSwap Batch Auction Card */}
-          <div className="p-5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 space-y-3">
-            <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          {/* ClearSwap */}
+          <div className="comparison-card card-immune">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong style={{ color: '#34d399', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem' }}>
+                <CheckCircle2 size={15} />
                 ClearSwap Batch Auction
-              </span>
-              <span className="badge badge-buy">MEV-Immune</span>
+              </strong>
+              <span className="badge badge-green">MEV-Immune</span>
             </div>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Execution Mechanism</span>
-                <span className="font-semibold text-emerald-300">Discrete Uniform Clearing</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Execution Type</span>
+                <span>Discrete Uniform</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Every Trader Execution Price</span>
-                <span className="font-mono text-emerald-300 font-bold">${clearingPrice.toFixed(2)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Every Trader Price</span>
+                <span className="font-mono" style={{ color: '#34d399', fontWeight: 700 }}>${clearingPrice.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Frontrun Advantage</span>
-                <span className="font-mono text-emerald-300 font-bold">Zero (0.00%)</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Frontrun Advantage</span>
+                <span className="font-mono" style={{ color: '#34d399', fontWeight: 700 }}>Zero (0.00%)</span>
               </div>
-              <div className="pt-2 border-t border-emerald-500/20 flex justify-between items-center">
-                <span className="text-slate-300 font-semibold">MEV Losses Prevented</span>
-                <span className="font-mono text-emerald-400 font-extrabold text-sm">+$150.80 USDC</span>
+              <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', justifyContent: 'space-between' }}>
+                <strong style={{ color: '#ffffff' }}>User Value Protected</strong>
+                <span className="font-mono" style={{ color: '#34d399', fontWeight: 800, fontSize: '0.875rem' }}>+$150.80 USDC</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Explanatory Callout */}
-        <div className="p-3.5 rounded-xl bg-slate-900/90 border border-white/10 text-xs text-slate-300 space-y-1">
-          <p className="font-bold text-white flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-sky-400" />
-            Why Batch Auctions Eliminate MEV by Construction
-          </p>
-          <p className="text-slate-400 leading-relaxed">
-            In ClearSwap, all orders within the batch execute at the exact same uniform clearing price $P^* = 3010$. A sandwich attacker receives the exact same clearing price as the victim, making risk-free sandwich extraction mathematically impossible.
-          </p>
+        {/* Explanation */}
+        <div className="callout-box">
+          <Layers size={18} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <strong style={{ color: '#ffffff' }}>Why Batch Auctions Eliminate MEV by Construction</strong>
+            In ClearSwap, all orders within a batch execute at the exact same uniform clearing price $P^* = 3010$. An attacker receives the exact same clearing price as the victim, making risk-free sandwich extraction mathematically impossible.
+          </div>
         </div>
 
-        <div className="flex justify-end">
-          <button onClick={onClose} className="btn-primary text-xs py-2 px-5">
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={onClose} className="btn btn-primary">
             Close Panel
           </button>
         </div>

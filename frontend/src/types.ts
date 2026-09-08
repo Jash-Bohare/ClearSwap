@@ -30,11 +30,3 @@ export interface BatchState {
   fills?: FillItem[];
   totalVolume?: number;
 }
-
-export interface ProtocolStats {
-  totalVolumeWETH: number;
-  totalVolumeUSDC: number;
-  totalBatchesCleared: number;
-  mevProtectedUSDC: number;
-  gasSavedPercent: number;
-}

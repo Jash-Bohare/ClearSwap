@@ -62,7 +62,7 @@ export const App: React.FC = () => {
     );
   };
 
-  // Run the canonical Spec 03 §17 worked example
+  // Run canonical Spec 03 §17 worked example
   const handleRunDemo = async () => {
     setIsDemoRunning(true);
 
@@ -80,14 +80,14 @@ export const App: React.FC = () => {
     setIsDemoRunning(false);
   };
 
-  // Close batch & execute clearing logic
+  // Close batch & execute clearing
   const handleCloseBatchNow = async () => {
     setIsClosingBatch(true);
     setBatchStatus('CLEARING');
 
     await new Promise((r) => setTimeout(r, 800));
 
-    // Solve clearing per Spec 03 §17:
+    // Spec 03 §17 solution:
     // P* = 3010
     // Fills: B1 (2.0), B2 (1.0), S1 (1.2857), S2 (1.7143)
     const pStar = 3010;
@@ -125,7 +125,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="app-container">
       {/* Navbar Header */}
       <Header
         currentBatchId={currentBatchId}
@@ -138,9 +138,9 @@ export const App: React.FC = () => {
         onConnectWallet={handleConnectWallet}
       />
 
-      {/* Main Dashboard Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
-        {/* Presenter Demo Controller Bar */}
+      {/* Main Dashboard */}
+      <main className="main-content">
+        {/* Presenter Demo Controller */}
         <DemoControlBar
           onRunFullDemo={handleRunDemo}
           onCloseBatchNow={handleCloseBatchNow}
@@ -149,26 +149,22 @@ export const App: React.FC = () => {
           currentBatchId={currentBatchId}
         />
 
-        {/* Top Grid: Order Form (Screen 1) & Current Batch Panel (Screen 2) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5">
-            <OrderForm
-              currentBatchId={currentBatchId}
-              onSubmitOrder={handleSubmitOrder}
-              isSubmitting={isSubmitting}
-            />
-          </div>
-          <div className="lg:col-span-7">
-            <CurrentBatchPanel
-              batchId={currentBatchId}
-              batchStatus={batchStatus}
-              secondsRemaining={secondsRemaining}
-              orders={orders}
-              onCancelOrder={handleCancelOrder}
-              onCloseBatchNow={handleCloseBatchNow}
-              isClosingBatch={isClosingBatch}
-            />
-          </div>
+        {/* Top Grid: Order Form (Screen 1) & Current Batch Live Book (Screen 2) */}
+        <div className="grid-2col">
+          <OrderForm
+            currentBatchId={currentBatchId}
+            onSubmitOrder={handleSubmitOrder}
+            isSubmitting={isSubmitting}
+          />
+          <CurrentBatchPanel
+            batchId={currentBatchId}
+            batchStatus={batchStatus}
+            secondsRemaining={secondsRemaining}
+            orders={orders}
+            onCancelOrder={handleCancelOrder}
+            onCloseBatchNow={handleCloseBatchNow}
+            isClosingBatch={isClosingBatch}
+          />
         </div>
 
         {/* Bottom Panel: Clearing & Settlement View (Screen 3 & 4) */}

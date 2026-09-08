@@ -19,46 +19,44 @@ export const GasComparisonModal: React.FC<GasComparisonModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-2xl p-6 space-y-6 border-amber-500/40 shadow-2xl relative animate-in fade-in zoom-in-95">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
-              <Flame className="w-5 h-5" />
+        <div className="modal-header">
+          <div className="modal-title-group">
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24' }}>
+              <Flame size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white font-heading">Gas Benchmark Comparison Panel</h2>
-              <p className="text-xs text-slate-400">Measured execution cost: Arbitrum Stylus Rust vs Pure Solidity (Spec 07 §6)</p>
+              <h3>Arbitrum Stylus Gas Benchmarks</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Measured execution cost: Stylus Rust WASM vs Pure Solidity (Spec 07 §6)</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="modal-close-btn">
+            <X size={18} />
           </button>
         </div>
 
-        {/* Gas Benchmark Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        {/* Benchmarks Table */}
+        <div className="table-container">
+          <table className="custom-table">
             <thead>
-              <tr className="border-b border-white/10 text-slate-400 font-semibold">
-                <th className="py-2.5 px-3">Batch Size (N)</th>
-                <th className="py-2.5 px-3 text-right">Pure Solidity Gas</th>
-                <th className="py-2.5 px-3 text-right text-sky-400">Stylus Rust Gas</th>
-                <th className="py-2.5 px-3 text-right text-emerald-400">Gas Savings</th>
+              <tr>
+                <th>Batch Size (N)</th>
+                <th className="text-right">Pure Solidity Gas</th>
+                <th className="text-right" style={{ color: '#38bdf8' }}>Stylus Rust Gas</th>
+                <th className="text-right" style={{ color: '#34d399' }}>Gas Savings</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody>
               {benchmarks.map((row) => (
-                <tr key={row.n} className="hover:bg-white/[0.02]">
-                  <td className="py-3.5 px-3 font-mono font-bold text-white">{row.n} Orders</td>
-                  <td className="py-3.5 px-3 font-mono text-right text-slate-300">
-                    {row.solidityGas.toLocaleString()} gas
-                  </td>
-                  <td className="py-3.5 px-3 font-mono text-right text-sky-300 font-bold">
+                <tr key={row.n}>
+                  <td className="font-mono" style={{ fontWeight: 700, color: '#ffffff' }}>{row.n} Orders</td>
+                  <td className="font-mono text-right">{row.solidityGas.toLocaleString()} gas</td>
+                  <td className="font-mono text-right" style={{ color: '#38bdf8', fontWeight: 700 }}>
                     {row.stylusGas.toLocaleString()} gas
                   </td>
-                  <td className="py-3.5 px-3 font-mono text-right text-emerald-400 font-extrabold text-sm">
+                  <td className="font-mono text-right" style={{ color: '#34d399', fontWeight: 800, fontSize: '0.875rem' }}>
                     {row.savings}
                   </td>
                 </tr>
@@ -67,34 +65,36 @@ export const GasComparisonModal: React.FC<GasComparisonModalProps> = ({
           </table>
         </div>
 
-        {/* Visual Bar Comparison */}
-        <div className="space-y-3 p-4 bg-slate-900/80 rounded-xl border border-white/5">
-          <div className="flex justify-between text-xs font-semibold text-slate-300">
+        {/* Visual Bar Breakdown */}
+        <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700 }}>
             <span>Stylus Efficiency Advantage (N=10 Orders)</span>
-            <span className="text-emerald-400">~82% Gas Reduction</span>
+            <span style={{ color: '#34d399' }}>~82.1% Gas Reduction</span>
           </div>
-          <div className="space-y-2 text-xs font-mono">
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.6875rem', fontFamily: 'var(--font-mono)' }}>
             <div>
-              <div className="flex justify-between text-slate-400 text-[11px] mb-1">
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', marginBottom: '4px' }}>
                 <span>Solidity O(N log N) Sorting Sweep: 102,982 gas</span>
               </div>
-              <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-                <div className="w-full h-full bg-rose-500/80" />
+              <div style={{ height: '10px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '9999px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '100%', background: '#f43f5e' }} />
               </div>
             </div>
+
             <div>
-              <div className="flex justify-between text-sky-300 text-[11px] mb-1">
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8', marginBottom: '4px' }}>
                 <span>Arbitrum Stylus WASM Engine: 18,400 gas</span>
               </div>
-              <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-                <div className="w-[18%] h-full bg-sky-400 shadow-lg shadow-sky-400/50" />
+              <div style={{ height: '10px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '9999px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '17.9%', background: '#38bdf8', boxShadow: '0 0 10px rgba(56, 189, 248, 0.5)' }} />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <button onClick={onClose} className="btn-primary text-xs py-2 px-5">
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={onClose} className="btn btn-primary">
             Close Panel
           </button>
         </div>

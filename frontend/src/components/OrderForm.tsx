@@ -27,17 +27,17 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     const numPrice = parseFloat(limitPrice);
 
     if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Order amount must be strictly positive (> 0)');
+      setError('Order quantity must be strictly greater than 0');
       return;
     }
     if (isNaN(numPrice) || numPrice <= 0) {
-      setError('Limit price must be strictly positive (> 0)');
+      setError('Limit price must be strictly greater than 0');
       return;
     }
 
     try {
       await onSubmitOrder(isBuy, numAmount, numPrice);
-      setSuccessMsg(`Order submitted to Batch #${currentBatchId}`);
+      setSuccessMsg(`Order successfully submitted to Batch #${currentBatchId}`);
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to submit order');
@@ -50,51 +50,43 @@ export const OrderForm: React.FC<OrderFormProps> = ({
   });
 
   return (
-    <div className="glass-panel p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="glass-panel">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
-          <h2 className="text-lg font-bold text-white font-heading">Submit Batch Order</h2>
-          <p className="text-xs text-slate-400">Zero front-running & sandwich protection by design</p>
+          <h3>Submit Batch Order</h3>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Non-prefunded • Protected from sandwich extraction</p>
         </div>
         <span className="badge badge-blue">Batch #{currentBatchId}</span>
       </div>
 
-      {/* Side Selector Tabs (Buy WETH vs Sell WETH) */}
-      <div className="grid grid-cols-2 p-1 bg-slate-900/80 rounded-xl border border-white/5">
+      {/* Side Selector (BUY vs SELL) */}
+      <div className="side-toggle-group">
         <button
           type="button"
           onClick={() => setIsBuy(true)}
-          className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
-            isBuy
-              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-              : 'text-slate-400 hover:text-white'
-          }`}
+          className={`side-toggle-btn ${isBuy ? 'active-buy' : ''}`}
         >
-          <ArrowDown className="w-3.5 h-3.5" />
+          <ArrowDown size={15} />
           <span>Buy WETH</span>
         </button>
         <button
           type="button"
           onClick={() => setIsBuy(false)}
-          className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
-            !isBuy
-              ? 'bg-rose-500 text-slate-950 shadow-md shadow-rose-500/20'
-              : 'text-slate-400 hover:text-white'
-          }`}
+          className={`side-toggle-btn ${!isBuy ? 'active-sell' : ''}`}
         >
-          <ArrowUp className="w-3.5 h-3.5" />
+          <ArrowUp size={15} />
           <span>Sell WETH</span>
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Quantity Input (WETH) */}
-        <div>
-          <div className="flex justify-between text-xs mb-1.5 font-medium">
-            <span className="text-slate-300">Order Quantity</span>
-            <span className="text-slate-400">Token: WETH</span>
+      <form onSubmit={handleSubmit}>
+        {/* Quantity Field */}
+        <div className="form-group">
+          <div className="form-label-row">
+            <span>Order Quantity</span>
+            <span>Token: WETH</span>
           </div>
-          <div className="relative rounded-xl bg-slate-900/90 border border-white/10 focus-within:border-sky-400/60 transition">
+          <div className="input-container">
             <input
               type="number"
               step="any"
@@ -102,25 +94,23 @@ export const OrderForm: React.FC<OrderFormProps> = ({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.0"
-              className="w-full bg-transparent px-3.5 py-3 text-base font-mono text-white placeholder-slate-600 focus:outline-none"
+              className="form-input"
               required
             />
-            <span className="absolute right-3.5 top-3.5 text-xs font-bold text-slate-400">
-              WETH
-            </span>
+            <span className="input-token-suffix">WETH</span>
           </div>
         </div>
 
-        {/* Limit Price Input (USDC) */}
-        <div>
-          <div className="flex justify-between text-xs mb-1.5 font-medium">
-            <span className="text-slate-300">Limit Price ({isBuy ? 'Maximum' : 'Minimum'})</span>
-            <span className="text-slate-400 flex items-center gap-1">
-              <Info className="w-3 h-3 text-sky-400" />
+        {/* Limit Price Field */}
+        <div className="form-group">
+          <div className="form-label-row">
+            <span>Limit Price ({isBuy ? 'Maximum' : 'Minimum'})</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Info size={12} color="#38bdf8" />
               <span>USDC per WETH</span>
             </span>
           </div>
-          <div className="relative rounded-xl bg-slate-900/90 border border-white/10 focus-within:border-sky-400/60 transition">
+          <div className="input-container">
             <input
               type="number"
               step="any"
@@ -128,72 +118,67 @@ export const OrderForm: React.FC<OrderFormProps> = ({
               value={limitPrice}
               onChange={(e) => setLimitPrice(e.target.value)}
               placeholder="3000"
-              className="w-full bg-transparent px-3.5 py-3 text-base font-mono text-white placeholder-slate-600 focus:outline-none"
+              className="form-input"
               required
             />
-            <span className="absolute right-3.5 top-3.5 text-xs font-bold text-slate-400">
-              USDC
-            </span>
+            <span className="input-token-suffix">USDC</span>
           </div>
         </div>
 
-        {/* Quick price presets */}
-        <div className="flex gap-2">
+        {/* Price Presets */}
+        <div className="preset-pills">
           {[2980, 3010, 3020, 3050].map((p) => (
             <button
               key={p}
               type="button"
               onClick={() => setLimitPrice(p.toString())}
-              className="px-2.5 py-1 text-xs font-mono rounded-md bg-slate-800/80 border border-white/5 text-slate-300 hover:border-sky-400/50 hover:text-white transition"
+              className="preset-pill-btn"
             >
               ${p}
             </button>
           ))}
         </div>
 
-        {/* Order Summary Box */}
-        <div className="p-3.5 bg-slate-900/60 rounded-xl border border-white/5 space-y-1.5 text-xs">
-          <div className="flex justify-between text-slate-400">
+        {/* Receipt Box */}
+        <div className="receipt-box">
+          <div className="receipt-row">
             <span>Order Type</span>
-            <span className="text-white font-semibold">{isBuy ? 'Limit Buy' : 'Limit Sell'}</span>
+            <span style={{ color: '#ffffff', fontWeight: 600 }}>{isBuy ? 'Limit Buy' : 'Limit Sell'}</span>
           </div>
-          <div className="flex justify-between text-slate-400">
+          <div className="receipt-row">
             <span>Target Batch</span>
-            <span className="font-mono text-sky-300 font-bold">Batch #{currentBatchId}</span>
+            <span className="font-mono" style={{ color: '#38bdf8', fontWeight: 700 }}>Batch #{currentBatchId}</span>
           </div>
-          <div className="flex justify-between text-slate-400 pt-1.5 border-t border-white/5">
+          <div className="receipt-row total-row">
             <span>Estimated Total</span>
-            <span className="font-mono text-white font-bold text-sm">${estimatedTotal} USDC</span>
+            <span className="font-mono" style={{ fontSize: '0.875rem' }}>${estimatedTotal} USDC</span>
           </div>
         </div>
 
-        {/* Error / Success Notices */}
+        {/* Alerts */}
         {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center gap-2.5 text-xs text-rose-300">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          <div className="alert-notice alert-danger">
+            <AlertCircle size={16} />
             <span>{error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2.5 text-xs text-emerald-300">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="alert-notice alert-success">
+            <CheckCircle2 size={16} />
             <span>{successMsg}</span>
           </div>
         )}
 
-        {/* Submit Button */}
+        {/* Submit Action */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className={`w-full py-3.5 rounded-xl font-heading font-bold text-sm tracking-wide transition shadow-lg ${
-            isBuy
-              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
-              : 'bg-rose-500 hover:bg-rose-400 text-slate-950 shadow-rose-500/20'
-          } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`btn ${isBuy ? 'btn-buy' : 'btn-sell'}`}
+          style={{ width: '100%', padding: '14px', fontSize: '0.875rem' }}
         >
           {isSubmitting
-            ? 'Submitting to Batch...'
+            ? 'Submitting Order...'
             : isBuy
             ? `Buy ${amount || '0'} WETH`
             : `Sell ${amount || '0'} WETH`}

@@ -31,133 +31,117 @@ export const CurrentBatchPanel: React.FC<CurrentBatchPanelProps> = ({
   const buyPercent = totalQty > 0 ? (totalBuyQty / totalQty) * 100 : 50;
 
   return (
-    <div className="glass-panel p-6 space-y-6">
+    <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Batch Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-extrabold text-white font-heading">
-              Current Auction Batch #{batchId}
-            </h2>
-            <span className="badge badge-gold animate-pulse">
-              {batchStatus}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h2>Current Auction Batch #{batchId}</h2>
+            <span className="badge badge-gold">{batchStatus}</span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Orders are collected privately until the batch closes and clears uniformly
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+            Orders are collected until the batch closes and clears at a uniform price
           </p>
         </div>
 
-        {/* Countdown Timer & Presenter Close Button */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 rounded-xl border border-white/10">
-            <Clock className="w-4 h-4 text-sky-400" />
-            <span className="text-xs text-slate-400">Closing in:</span>
-            <span className="font-mono font-bold text-white text-sm">
-              {secondsRemaining}s
-            </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+            <Clock size={15} color="#38bdf8" />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Closing in:</span>
+            <span className="font-mono" style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.875rem' }}>{secondsRemaining}s</span>
           </div>
 
           <button
             onClick={onCloseBatchNow}
             disabled={isClosingBatch}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-400/30 text-sky-300 font-semibold text-xs transition"
-            title="Presenter control: trigger batch close & clearing immediately"
+            className="btn btn-ghost"
+            style={{ borderColor: 'rgba(56, 189, 248, 0.3)', color: '#38bdf8' }}
+            title="Trigger batch clearing immediately"
           >
-            <Play className="w-3.5 h-3.5 text-sky-400" />
-            <span>{isClosingBatch ? 'Closing...' : 'Close Batch Now'}</span>
+            <Play size={14} />
+            <span>{isClosingBatch ? 'Clearing...' : 'Close Batch Now'}</span>
           </button>
         </div>
       </div>
 
-      {/* Aggregate Liquidity Bar */}
-      <div className="p-4 bg-slate-900/70 rounded-xl border border-white/5 space-y-2">
-        <div className="flex justify-between text-xs font-semibold">
-          <div className="flex items-center gap-1.5 text-emerald-400">
-            <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>Buy Demand: {totalBuyQty.toFixed(2)} WETH ({buyOrders.length} orders)</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-rose-400">
-            <span>Sell Supply: {totalSellQty.toFixed(2)} WETH ({sellOrders.length} orders)</span>
-            <ArrowDownLeft className="w-3.5 h-3.5" />
-          </div>
+      {/* Aggregate Liquidity Meter */}
+      <div className="liquidity-meter-card">
+        <div className="liquidity-stats-row">
+          <span style={{ color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <ArrowUpRight size={14} />
+            Buy Demand: {totalBuyQty.toFixed(2)} WETH ({buyOrders.length} orders)
+          </span>
+          <span style={{ color: '#fb7185', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Sell Supply: {totalSellQty.toFixed(2)} WETH ({sellOrders.length} orders)
+            <ArrowDownLeft size={14} />
+          </span>
         </div>
-        <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden flex">
-          <div
-            className="h-full bg-emerald-500 transition-all duration-500"
-            style={{ width: `${buyPercent}%` }}
-          />
-          <div
-            className="h-full bg-rose-500 transition-all duration-500"
-            style={{ width: `${100 - buyPercent}%` }}
-          />
+        <div className="liquidity-bar-track">
+          <div className="liquidity-bar-buy" style={{ width: `${buyPercent}%` }} />
+          <div className="liquidity-bar-sell" style={{ width: `${100 - buyPercent}%` }} />
         </div>
       </div>
 
-      {/* Live Order Book in Current Batch */}
+      {/* Live Orders Table */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200 font-heading flex items-center gap-2">
-            <Users className="w-4 h-4 text-sky-400" />
-            <span>Orders in Open Batch ({currentOrders.length})</span>
-          </h3>
-          <span className="text-[11px] text-slate-400">Submission order has zero impact on fill price</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Users size={16} color="#38bdf8" />
+            <h4 style={{ fontSize: '0.875rem' }}>Orders in Open Batch ({currentOrders.length})</h4>
+          </div>
+          <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>Order of submission has zero effect on execution</span>
         </div>
 
         {currentOrders.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 border border-dashed border-white/10 rounded-xl text-xs">
-            No orders submitted yet in Batch #{batchId}. Place an order above or click "Run MEV Demo" in the header.
+          <div style={{ padding: '36px 16px', textAlign: 'center', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+            No orders submitted yet in Batch #{batchId}. Submit an order on the left or click "Run MEV Demo".
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="table-container">
+            <table className="custom-table">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400 font-semibold">
-                  <th className="py-2.5 px-3">Order ID</th>
-                  <th className="py-2.5 px-3">Trader</th>
-                  <th className="py-2.5 px-3">Side</th>
-                  <th className="py-2.5 px-3 text-right">Amount</th>
-                  <th className="py-2.5 px-3 text-right">Limit Price</th>
-                  <th className="py-2.5 px-3 text-center">Status</th>
-                  <th className="py-2.5 px-3 text-right">Action</th>
+                <tr>
+                  <th>ID</th>
+                  <th>Trader</th>
+                  <th>Side</th>
+                  <th className="text-right">Quantity</th>
+                  <th className="text-right">Limit Price</th>
+                  <th className="text-center">Status</th>
+                  <th className="text-right">Cancel</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody>
                 {currentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-white/[0.02] transition">
-                    <td className="py-3 px-3 font-mono font-bold text-white">#{order.id}</td>
-                    <td className="py-3 px-3 font-mono text-slate-300">
+                  <tr key={order.id}>
+                    <td className="font-mono" style={{ fontWeight: 700, color: '#ffffff' }}>#{order.id}</td>
+                    <td className="font-mono">
                       {order.traderLabel ? (
-                        <span className="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-bold">
+                        <span style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 700 }}>
                           {order.traderLabel}
                         </span>
                       ) : (
                         `${order.trader.slice(0, 6)}...${order.trader.slice(-4)}`
                       )}
                     </td>
-                    <td className="py-3 px-3">
-                      <span className={`badge ${order.isBuy ? 'badge-buy' : 'badge-sell'}`}>
+                    <td>
+                      <span className={`badge ${order.isBuy ? 'badge-green' : 'badge-rose'}`}>
                         {order.isBuy ? 'BUY' : 'SELL'}
                       </span>
                     </td>
-                    <td className="py-3 px-3 font-mono text-right text-white font-semibold">
+                    <td className="font-mono text-right" style={{ color: '#ffffff', fontWeight: 600 }}>
                       {order.amount.toFixed(4)} WETH
                     </td>
-                    <td className="py-3 px-3 font-mono text-right text-slate-300">
-                      ${order.limitPrice.toFixed(2)}
+                    <td className="font-mono text-right">${order.limitPrice.toFixed(2)}</td>
+                    <td className="text-center">
+                      <span className="badge badge-gold">{order.status}</span>
                     </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className="badge badge-gold">
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-right">
+                    <td className="text-right">
                       <button
                         onClick={() => onCancelOrder(order.id)}
-                        className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
                         title="Cancel Order"
                       >
-                        <XCircle className="w-4 h-4" />
+                        <XCircle size={15} />
                       </button>
                     </td>
                   </tr>
