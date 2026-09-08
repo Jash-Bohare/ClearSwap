@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ShieldCheck, ArrowRight, RotateCcw } from 'lucide-react';
+import { Sparkles, ShieldCheck, ArrowRight, RotateCcw, TrendingUp } from 'lucide-react';
 import type { BatchState } from '../types';
 
 interface ClearingResultPanelProps {
@@ -26,6 +26,18 @@ export const ClearingResultPanel: React.FC<ClearingResultPanelProps> = ({
   const pStar = lastClearedBatch.clearingPrice;
   const fills = lastClearedBatch.fills || [];
 
+  // Calculate aggregate trader surplus (total dollars saved or gained vs limit prices)
+  const totalSurplus = fills.reduce((acc, fill) => {
+    const limit = fill.limitPrice || fill.clearingPrice;
+    if (fill.isBuy) {
+      const diff = limit - fill.clearingPrice;
+      return acc + (diff > 0 ? diff * fill.filledAmount : 0);
+    } else {
+      const diff = fill.clearingPrice - limit;
+      return acc + (diff > 0 ? diff * fill.filledAmount : 0);
+    }
+  }, 0);
+
   return (
     <div className="glass-panel glass-panel-highlight" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* 5-SECOND UX RULE HERO */}
@@ -41,12 +53,34 @@ export const ClearingResultPanel: React.FC<ClearingResultPanelProps> = ({
           <span className="clearing-currency-suffix">USDC / WETH</span>
         </div>
 
-        {/* Mandatory Microcopy under 5-second rule (Spec 06 §3) */}
+        {/* Mandatory Microcopy under 5-second rule */}
         <p className="clearing-microcopy">
-          1 price for every trade in this batch — no one paid more or got more just by going first.
+          1 uniform price for every trade in this batch — no frontrunning, zero slippage exploitation.
         </p>
 
-        <button onClick={onOpenSandwichModal} className="btn btn-danger-outline" style={{ margin: '0 auto' }}>
+        {/* Surplus Highlight Badge */}
+        {totalSurplus > 0 && (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              background: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+              color: '#34d399',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              margin: '0 auto 8px auto'
+            }}
+          >
+            <TrendingUp size={15} />
+            <span>Total Trader Surplus Created: +${totalSurplus.toFixed(2)} USDC</span>
+          </div>
+        )}
+
+        <button onClick={onOpenSandwichModal} className="btn btn-danger-outline" style={{ margin: '4px auto 0 auto' }}>
           <ShieldCheck size={16} />
           <span>Compare to Sandwich AMM Loss</span>
           <ArrowRight size={14} />
@@ -55,10 +89,10 @@ export const ClearingResultPanel: React.FC<ClearingResultPanelProps> = ({
 
       {/* Settled Fills Table */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
           <h4>Settlement & Fill Execution ({fills.length} fills settled)</h4>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Total Cleared Volume: <strong style={{ color: '#ffffff' }}>{lastClearedBatch.totalVolume?.toFixed(2)} WETH</strong>
+            Total Volume: <strong style={{ color: '#ffffff' }}>{lastClearedBatch.totalVolume?.toFixed(2)} WETH</strong>
           </span>
         </div>
 
@@ -74,44 +108,92 @@ export const ClearingResultPanel: React.FC<ClearingResultPanelProps> = ({
                   <th>Order</th>
                   <th>Trader</th>
                   <th>Side</th>
-                  <th className="text-right">Filled Qty</th>
-                  <th className="text-right" style={{ color: '#fbbf24' }}>Uniform Clearing Price (P*)</th>
-                  <th className="text-right">Settled Amount</th>
+                  <th className="text-right">Qty</th>
+                  <th className="text-right">Trader Limit</th>
+                  <th className="text-right" style={{ color: '#fbbf24' }}>Uniform Price (P*)</th>
+                  <th className="text-center" style={{ color: '#34d399' }}>Price Advantage (Surplus)</th>
+                  <th className="text-right">Settled Total</th>
                 </tr>
               </thead>
               <tbody>
-                {fills.map((fill, idx) => (
-                  <tr key={idx}>
-                    <td className="font-mono" style={{ fontWeight: 700, color: '#ffffff' }}>#{fill.orderId}</td>
-                    <td className="font-mono">
-                      {fill.traderLabel ? (
-                        <span style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 700 }}>
-                          {fill.traderLabel}
+                {fills.map((fill, idx) => {
+                  const limit = fill.limitPrice || fill.clearingPrice;
+                  let perEthDiff = 0;
+                  let totalDollarDiff = 0;
+                  let isAdvantage = false;
+
+                  if (fill.isBuy) {
+                    perEthDiff = limit - fill.clearingPrice;
+                    totalDollarDiff = perEthDiff * fill.filledAmount;
+                    isAdvantage = perEthDiff > 0.001;
+                  } else {
+                    perEthDiff = fill.clearingPrice - limit;
+                    totalDollarDiff = perEthDiff * fill.filledAmount;
+                    isAdvantage = perEthDiff > 0.001;
+                  }
+
+                  return (
+                    <tr key={idx}>
+                      <td className="font-mono" style={{ fontWeight: 700, color: '#ffffff' }}>#{fill.orderId}</td>
+                      <td className="font-mono">
+                        {fill.traderLabel ? (
+                          <span style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 700 }}>
+                            {fill.traderLabel}
+                          </span>
+                        ) : (
+                          `${fill.trader.slice(0, 6)}...${fill.trader.slice(-4)}`
+                        )}
+                      </td>
+                      <td>
+                        <span className={`badge ${fill.isBuy ? 'badge-green' : 'badge-rose'}`}>
+                          {fill.isBuy ? 'BUY' : 'SELL'}
                         </span>
-                      ) : (
-                        `${fill.trader.slice(0, 6)}...${fill.trader.slice(-4)}`
-                      )}
-                    </td>
-                    <td>
-                      <span className={`badge ${fill.isBuy ? 'badge-green' : 'badge-rose'}`}>
-                        {fill.isBuy ? 'BUY' : 'SELL'}
-                      </span>
-                    </td>
-                    <td className="font-mono text-right" style={{ color: '#ffffff', fontWeight: 700 }}>
-                      {fill.filledAmount.toFixed(4)} WETH
-                    </td>
-                    <td className="font-mono text-right" style={{ color: '#fbbf24', fontWeight: 800, fontSize: '0.875rem' }}>
-                      ${fill.clearingPrice.toLocaleString()} USDC
-                    </td>
-                    <td className="font-mono text-right" style={{ fontWeight: 600 }}>
-                      {fill.isBuy ? (
-                        <span style={{ color: '#fda4af' }}>-${fill.quoteAmount.toFixed(2)} USDC</span>
-                      ) : (
-                        <span style={{ color: '#6ee7b7' }}>+${fill.quoteAmount.toFixed(2)} USDC</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="font-mono text-right" style={{ color: '#ffffff', fontWeight: 700 }}>
+                        {fill.filledAmount.toFixed(4)} WETH
+                      </td>
+                      <td className="font-mono text-right" style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
+                        ${limit.toFixed(2)}
+                      </td>
+                      <td className="font-mono text-right" style={{ color: '#fbbf24', fontWeight: 800 }}>
+                        ${fill.clearingPrice.toLocaleString()}
+                      </td>
+                      <td className="text-center">
+                        {isAdvantage ? (
+                          <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <span
+                              style={{
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                background: 'rgba(16, 185, 129, 0.15)',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                color: '#34d399',
+                                fontSize: '0.75rem',
+                                fontWeight: 700
+                              }}
+                            >
+                              +{fill.isBuy ? `Saved $${perEthDiff.toFixed(2)}/ETH` : `Extra +$${perEthDiff.toFixed(2)}/ETH`}
+                            </span>
+                            <span style={{ fontSize: '0.65rem', color: '#6ee7b7', marginTop: '2px' }}>
+                              ({fill.isBuy ? 'Saved' : 'Profit'}: +${totalDollarDiff.toFixed(2)})
+                            </span>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            Exact Limit Match ($0.00)
+                          </span>
+                        )}
+                      </td>
+                      <td className="font-mono text-right" style={{ fontWeight: 600 }}>
+                        {fill.isBuy ? (
+                          <span style={{ color: '#fda4af' }}>-${fill.quoteAmount.toFixed(2)} USDC</span>
+                        ) : (
+                          <span style={{ color: '#6ee7b7' }}>+${fill.quoteAmount.toFixed(2)} USDC</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
