@@ -6,8 +6,9 @@ export interface OrderItem {
   amount: number; // in WETH
   limitPrice: number; // in USDC
   batchId: number;
-  status: 'PENDING' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED';
+  status: 'PENDING' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED' | 'ROLLED';
   filledAmount?: number;
+  rolledFromBatchId?: number;
 }
 
 export interface FillItem {
