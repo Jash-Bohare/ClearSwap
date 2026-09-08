@@ -31,17 +31,21 @@ contract DeploySystem is Script {
         address envWeth = vm.envOr("WETH_ADDRESS", address(0));
         address envUsdc = vm.envOr("USDC_ADDRESS", address(0));
 
+        MockWETH mockWeth;
         if (envWeth != address(0)) {
             weth = envWeth;
+            mockWeth = MockWETH(weth);
         } else {
-            MockWETH mockWeth = new MockWETH();
+            mockWeth = new MockWETH();
             weth = address(mockWeth);
         }
 
+        MockUSDC mockUsdc;
         if (envUsdc != address(0)) {
             usdc = envUsdc;
+            mockUsdc = MockUSDC(usdc);
         } else {
-            MockUSDC mockUsdc = new MockUSDC();
+            mockUsdc = new MockUSDC();
             usdc = address(mockUsdc);
         }
 
@@ -66,6 +70,12 @@ contract DeploySystem is Script {
         ob.setSettlement(settlement);
         ob.setClearingAdapter(clearingAdapter);
         adapter.setSettlement(settlement);
+
+        // 7. Mint initial test tokens & pre-approve settlement for deployer
+        mockWeth.mint(msg.sender, 100 ether);
+        mockUsdc.mint(msg.sender, 300_000 * 10**6);
+        mockWeth.approve(settlement, type(uint256).max);
+        mockUsdc.approve(settlement, type(uint256).max);
 
         vm.stopBroadcast();
 
