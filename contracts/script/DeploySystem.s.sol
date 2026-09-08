@@ -20,19 +20,38 @@ contract DeploySystem is Script {
             address settlement
         )
     {
-        vm.startBroadcast();
+        uint256 deployerPrivateKey = vm.envOr("PRIVATE_KEY", uint256(0));
+        if (deployerPrivateKey != 0) {
+            vm.startBroadcast(deployerPrivateKey);
+        } else {
+            vm.startBroadcast();
+        }
 
-        // 1. Deploy Mock Tokens
-        MockWETH mockWeth = new MockWETH();
-        MockUSDC mockUsdc = new MockUSDC();
-        weth = address(mockWeth);
-        usdc = address(mockUsdc);
+        // 1. Deploy Mock Tokens (or reuse existing addresses if specified in env)
+        address envWeth = vm.envOr("WETH_ADDRESS", address(0));
+        address envUsdc = vm.envOr("USDC_ADDRESS", address(0));
 
-        // 2. Mock Clearing Engine placeholder address (or Stylus deployed address)
-        address clearingEngine = address(0x1234567890123456789012345678901234567890);
+        if (envWeth != address(0)) {
+            weth = envWeth;
+        } else {
+            MockWETH mockWeth = new MockWETH();
+            weth = address(mockWeth);
+        }
 
-        // 3. Deploy OrderBook
-        OrderBook ob = new OrderBook(Constants.DEFAULT_BATCH_WINDOW_SECONDS, Constants.MIN_ORDER_SIZE);
+        if (envUsdc != address(0)) {
+            usdc = envUsdc;
+        } else {
+            MockUSDC mockUsdc = new MockUSDC();
+            usdc = address(mockUsdc);
+        }
+
+        // 2. Read Stylus Clearing Engine address (from env or default placeholder)
+        address clearingEngine = vm.envOr("STYLUS_ENGINE_ADDRESS", address(0x1234567890123456789012345678901234567890));
+
+        // 3. Deploy OrderBook (Spec 04 §11)
+        uint256 windowSeconds = vm.envOr("BATCH_WINDOW_SECONDS", Constants.DEFAULT_BATCH_WINDOW_SECONDS);
+        uint256 minSize = vm.envOr("MIN_ORDER_SIZE", Constants.MIN_ORDER_SIZE);
+        OrderBook ob = new OrderBook(windowSeconds, minSize);
         orderBook = address(ob);
 
         // 4. Deploy ClearingAdapter
@@ -53,6 +72,7 @@ contract DeploySystem is Script {
         console.log("=== ClearSwap System Deployed ===");
         console.log("MockWETH:        ", weth);
         console.log("MockUSDC:        ", usdc);
+        console.log("ClearingEngine:  ", clearingEngine);
         console.log("OrderBook:       ", orderBook);
         console.log("ClearingAdapter: ", clearingAdapter);
         console.log("Settlement:      ", settlement);

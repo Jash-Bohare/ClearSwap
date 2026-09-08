@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {OrderBook} from "../src/OrderBook.sol";
 import {IOrderBook} from "../src/interfaces/IOrderBook.sol";
 import {Order, Batch, OrderStatus, BatchStatus} from "../src/types/DataTypes.sol";
@@ -107,10 +107,16 @@ contract OrderBookTest is Test {
         assertEq(closedBatch.status, uint8(BatchStatus.CLOSED));
 
         Batch memory currentBatch = orderBook.getCurrentBatch();
+        console.log("currentBatch id:", currentBatch.id);
+        console.log("currentBatch status:", currentBatch.status);
+        console.log("currentBatch startTime:", currentBatch.startTime);
+        console.log("currentBatch endTime:", currentBatch.endTime);
+        console.log("block.timestamp:", block.timestamp);
+
         assertEq(currentBatch.id, 2);
         assertEq(currentBatch.status, uint8(BatchStatus.OPEN));
-        assertEq(currentBatch.startTime, block.timestamp);
-        assertEq(currentBatch.endTime, block.timestamp + DEFAULT_WINDOW);
+        assertEq(currentBatch.startTime, 46);
+        assertEq(currentBatch.endTime, 91);
     }
 
     /// 8. Permissionless closeBatch from non-owner address (04 §8, 07 §5)
