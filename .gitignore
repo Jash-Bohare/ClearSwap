@@ -1,0 +1,27 @@
+# Rust / Stylus
+**/target/
+**/*.rs.bk
+Cargo.lock
+
+# Foundry / Solidity
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# Node / Frontend
+**/node_modules/
+**/dist/
+**/dist-ssr/
+*.local
+.npm
+.eslintcache
+
+# Environment & IDE
+.env
+.env.*
+!.env.example
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
