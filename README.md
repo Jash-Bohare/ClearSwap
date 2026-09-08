@@ -1,6 +1,6 @@
 # ClearSwap — MEV-Resistant Batch Auction DEX
 
-> **Next-Generation Decentralized Exchange built with Arbitrum Stylus (Rust) and Solidity.**
+> **Next-Generation Decentralized Exchange built with Arbitrum Stylus (Rust) and Solidity.**  
 > Eliminates front-running, sandwich attacks, and MEV extraction by construction through **discrete uniform-price batch auctions**.
 
 ---
@@ -26,7 +26,8 @@
    - [Prerequisites](#prerequisites)
    - [1. Running Rust Engine Unit Tests](#1-running-rust-engine-unit-tests)
    - [2. Running Foundry Smart Contract Tests](#2-running-foundry-smart-contract-tests)
-   - [3. Running the Interactive Frontend](#3-running-the-interactive-frontend)
+   - [3. Starting Local Anvil EVM & Deploying Contracts](#3-starting-local-anvil-evm--deploying-contracts)
+   - [4. Running the Interactive Frontend & Demo Controller](#4-running-the-interactive-frontend--demo-controller)
 8. [Repository Structure](#8-repository-structure)
 9. [Security & Safety Invariants](#9-security--safety-invariants)
 
@@ -56,10 +57,20 @@ Traditional Automated Market Makers (AMMs) use an $x \times y = k$ bonding curve
 - Every trade moves the market price slightly.
 - Trades execute one after another in a straight line: `Tx 1` → `Tx 2` → `Tx 3`.
 
-```
-Traditional DEX:
-Time --->  [Tx 1 (Bot)] ===> [Tx 2 (User Victim)] ===> [Tx 3 (Bot)]
-           Buys low          Pushed to buy high        Sells high (Dumps)
+```mermaid
+flowchart LR
+    subgraph Mempool["Pending Mempool"]
+        User["User Trade (Tx 2)"]
+    end
+
+    subgraph BlockExecution["Block Execution (Sequential AMM)"]
+        direction LR
+        BotFront["1. Bot Front-Runs (Tx 1)<br/>Buys Low @ $3,000<br/>Pushes Price Up"] --> 
+        UserVictim["2. User Trade (Tx 2)<br/>Executes with Slippage @ $3,085<br/>Loses $150.80"] --> 
+        BotBack["3. Bot Back-Runs (Tx 3)<br/>Dumps High @ $3,085<br/>Extracts Risk-Free MEV"]
+    end
+
+    Mempool -.->|"Bot jumps ahead with high priority gas"| BlockExecution
 ```
 
 ### The Anatomy of a Sandwich Attack
@@ -78,29 +89,42 @@ Imagine you want to buy **2.0 WETH** on a DEX. You set a maximum slippage tolera
 
 ClearSwap replaces sequential execution with **Discrete Uniform-Price Batch Auctions**.
 
-```
-ClearSwap Batch Auction:
-Batch Window (e.g. 45s):
-  ┌─────────────────────────────────────────────────────────┐
-  │ [User Order 1]  [Bot Order]  [User Order 2]  [User 3]   │
-  └──────────────────────────┬──────────────────────────────┘
-                             ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │         Arbitrum Stylus Rust Clearing Engine            │
-  │     Calculates Uniform Market Clearing Price (P*)       │
-  └──────────────────────────┬──────────────────────────────┘
-                             ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │   ALL MATCHED ORDERS EXECUTE AT EXACTLY P* = $3,010     │
-  │          Front-running advantage: 0.00%                 │
-  └─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph BatchAccumulation["Batch Window (e.g. 45 Seconds)"]
+        direction LR
+        O1["Trader A: Buy 2 WETH @ $3,050"]
+        O2["MEV Bot: Buy 5 WETH @ $3,100"]
+        O3["Trader B: Sell 1.5 WETH @ $2,980"]
+        O4["Trader C: Sell 2.0 WETH @ $3,010"]
+    end
+
+    BatchAccumulation -->|"Batch Closes (All Orders Aggregated)"| StylusEngine
+
+    subgraph StylusEngine["Arbitrum Stylus Rust Clearing Engine (WASM)"]
+        direction TB
+        Algo1["Candidate Price Generation & Price Sweep"]
+        Algo2["Find P* that Maximizes Matched Volume"]
+        Algo3["Two-Stage Tie Breaking (Min Imbalance, Lowest Price)"]
+        Algo1 --> Algo2 --> Algo3
+    end
+
+    StylusEngine -->|"Clearing Result (P* = $3,010)"| Settlement
+
+    subgraph Settlement["On-Chain Settlement (Solidity)"]
+        direction TB
+        S1["All Matched Trades Execute at EXACTLY P* = $3,010"]
+        S2["Zero Slippage Advantage • Front-Running Profit = $0.00"]
+        S3["Unmatched Out-of-the-Money Orders Auto-Rollover to Next Batch"]
+        S1 --> S2 --> S3
+    end
 ```
 
 ### What is a Discrete Batch Auction?
 1. **Accumulation Phase**: While a batch is open (e.g., 45 seconds), traders submit limit buy and sell orders. No orders execute yet.
 2. **Batch Closure**: When the timer expires, the batch is closed. No new orders can enter this batch.
 3. **Uniform Clearing**: An optimization algorithm analyzes all buy and sell curves together to find the single price $P^*$ that maximizes trade volume.
-4. **Simultaneous Settlement**: All eligible trades execute at **$P^*$**.
+4. **Simultaneous Settlement**: All eligible trades execute at **$P^*$**. 
 
 ### The Uniform Clearing Price ($P^*$)
 The **5-Second UX Rule** of ClearSwap is simple:
@@ -142,43 +166,36 @@ By executing the heavy math inside an **Arbitrum Stylus WebAssembly (WASM)** con
 
 ClearSwap is architected cleanly with separation of concerns:
 
-```
-                      ┌─────────────────────────────────┐
-                      │          React Frontend         │
-                      │  (Vite + TypeScript + CSS)      │
-                      └────────────────┬────────────────┘
-                                       │ submitOrder()
-                                       ▼
-                      ┌─────────────────────────────────┐
-                      │         OrderBook.sol           │
-                      │   - Collects batch orders       │
-                      │   - Tracks batch lifecycle      │
-                      │   - Permissionless closeBatch() │
-                      └────────────────┬────────────────┘
-                                       │ closeBatch()
-                                       ▼
-                      ┌────────────────────────────────┐
-                      │       ClearingAdapter.sol      │
-                      │  - Prepares input calldata     │
-                      │  - Calls Stylus WASM Engine    │
-                      │  - Enforces 4 Safety Checks    │
-                      └────────────────┬───────────────┘
-                                       │ computeClearing()
-                                       ▼
-                      ┌────────────────────────────────┐
-                      │    Stylus Rust Engine (WASM)   │
-                      │  - Candidate Price Sweep       │
-                      │  - Argmax Volume P* Selection  │
-                      │  - Pro-Rata & Remainder Math   │
-                      └────────────────┬───────────────┘
-                                       │ ClearingResult
-                                       ▼
-                      ┌─────────────────────────────────┐
-                      │         Settlement.sol          │
-                      │  - Pulls tokens (ERC20 transfer)│
-                      │  - Credits traders atomically   │
-                      │  - Triggers order rollovers     │
-                      └─────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph FrontendLayer["Presentation & Trader Layer (React + Vite + TypeScript)"]
+        UI["Interactive Batch DEX UI"]
+        Controller["Presentation Demo Controller<br/>(Pause/Resume, Speed 1x-10x, §17 Worked Example)"]
+    end
+
+    subgraph OrderBookLayer["Order Management (Solidity)"]
+        OB["OrderBook.sol<br/>- Non-prefunding limit orders<br/>- Batch lifecycle & countdown timer<br/>- Permissionless closeBatch()"]
+    end
+
+    subgraph AdapterLayer["Safety & Dispatch Layer (Solidity)"]
+        CA["ClearingAdapter.sol<br/>- Calldata encoding & payload dispatch<br/>- 4 Mandatory Safety Invariant Checks"]
+    end
+
+    subgraph ComputeLayer["Offloaded Compute Layer (Arbitrum Stylus WASM)"]
+        Stylus["stylus-engine (Rust / WASM)<br/>- Candidate price generation<br/>- Argmax volume & min imbalance sweep<br/>- Pro-rata rationing & single-wei remainder math"]
+    end
+
+    subgraph SettlementLayer["Settlement & Custody (Solidity)"]
+        ST["Settlement.sol<br/>- Atomic multi-token transfers (WETH / USDC)<br/>- Zero-slippage trader payouts<br/>- Order rollover emission"]
+    end
+
+    UI -->|"submitOrder() / cancelOrder()"| OB
+    Controller -->|"Trigger Fast Batch Close"| OB
+    OB -->|"closeBatch() -> requestClearing()"| CA
+    CA -->|"delegatecall / staticcall"| Stylus
+    Stylus -->|"Returns (P*, Fills, Rollovers)"| CA
+    CA -->|"Verified Result -> executeSettlement()"| ST
+    ST -->|"Token Transfers & Rollover Events"| UI
 ```
 
 ### Smart Contract Components
@@ -257,7 +274,7 @@ Follow these steps to run ClearSwap on your local machine.
 ### Prerequisites
 Make sure you have the following installed:
 - **Rust & Cargo** (1.75+): [Install Rust](https://www.rust-lang.org/tools/install)
-- **Foundry** (`forge` & `anvil`): [Install Foundry](https://getfoundry.sh/)
+- **Foundry** (`forge`, `cast`, `anvil`): [Install Foundry](https://getfoundry.sh/)
 - **Node.js** (v18+) & `npm`: [Install Node.js](https://nodejs.org/)
 
 ---
@@ -309,8 +326,28 @@ Ran 7 test suites: 44 tests passed, 0 failed, 0 skipped (44 total tests)
 
 ---
 
-### 3. Running the Interactive Frontend
-Launch the dark-mode React application with the live batch auction dashboard, sandwich simulator, and demo controls:
+### 3. Starting Local Anvil EVM & Deploying Contracts
+
+To test the system on a live local Ethereum/Arbitrum EVM chain:
+
+1. **Start Anvil** in Terminal 1:
+   ```bash
+   anvil --chain-id 31337
+   ```
+   > Anvil runs on `http://127.0.0.1:8545` with 10 pre-funded test accounts.
+
+2. **Deploy the Smart Contracts** in Terminal 2:
+   ```bash
+   cd contracts
+   forge script script/DeploySystem.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
+   ```
+   > This deploys `MockWETH`, `MockUSDC`, `OrderBook`, `ClearingAdapter`, `Settlement`, and pre-mints test tokens to the primary deployer account (`0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`).
+
+---
+
+### 4. Running the Interactive Frontend & Demo Controller
+
+In Terminal 3, launch the dark-mode React application:
 
 ```bash
 cd frontend
@@ -318,14 +355,19 @@ npm install
 npm run dev
 ```
 
-Open your browser at **`http://localhost:5173/`** (or the port indicated in the terminal).
+Open your browser at **`http://localhost:5173/`**.
 
-#### Exploring the Interactive UI:
-1. **Run MEV Demo Button**: Injects the canonical 6-order worked example into the current batch.
-2. **Current Batch Live Book**: Watch the countdown timer and live Buy/Sell liquidity meter.
-3. **Close Batch & Clear**: Triggers the Stylus clearing calculation and reveals the uniform $P^* = \$3,010$ hero card.
-4. **Sandwich Protection Modal**: View side-by-side math comparing sequential AMM slippage loss vs ClearSwap's 0% frontrun advantage.
-5. **Gas Benchmark Modal**: View real measured gas comparisons between Stylus WASM and pure Solidity.
+#### Exploring the Interactive UI & Pitch Controller:
+1. **Presentation Demo Controller**:
+   - **Pause / Resume Timer**: Freeze the 45-second countdown to explain order book depth and math to judges without being rushed.
+   - **Speed Multipliers (`1x`, `2x`, `5x`, `10x`)**: Fast-forward auction batch cycles on demand.
+   - **Run §17 Worked Example**: Injects the 6 canonical orders into the current batch.
+   - **Reset**: Resets all batch states and clears orders for a fresh demonstration.
+2. **Current Batch Live Book**: Watch the countdown timer, active rollovers badge, and live Buy/Sell aggregate liquidity meter.
+3. **Automatic Batch Clearing**: When the timer reaches `0s`, the clearing engine executes, settling matched orders at the uniform price (e.g. **$3,010 USDC**) and rolling over out-of-the-money trades.
+4. **Dynamic Wallet Balance Accounting**: Submitting limit orders escrows tokens from your wallet, while batch settlement deposits fills and refunds price discounts. Click **🪙 Faucet** to mint +100 WETH / +300k USDC anytime.
+5. **Sandwich Protection Modal**: View side-by-side math comparing sequential AMM slippage loss vs ClearSwap's 0% frontrun advantage.
+6. **Gas Benchmark Modal**: View real measured gas comparisons between Stylus WASM (~35k gas) and pure Solidity (~195k gas).
 
 ---
 
@@ -381,13 +423,13 @@ ClearSwap/
         ├── index.css                  # Custom dark luxury crypto Vanilla CSS design system
         ├── types.ts
         └── components/
-            ├── Header.tsx             # Sticky navbar, brand badge, live status
+            ├── Header.tsx             # Sticky navbar, brand badge, live status, faucet
             ├── OrderForm.tsx          # Limit order submission & quick price presets
             ├── CurrentBatchPanel.tsx  # Live auction book, countdown timer, liquidity meter
             ├── ClearingResultPanel.tsx# 5-Second UX hero card & settlement fills table
             ├── SandwichComparisonModal.tsx # Side-by-side MEV extraction breakdown
             ├── GasComparisonModal.tsx # Stylus vs EVM gas savings visualization
-            └── DemoControlBar.tsx     # 1-click worked example replay controller
+            └── DemoControlBar.tsx     # Presentation controller (Pause, Speed, Inject, Reset)
 ```
 
 ---
