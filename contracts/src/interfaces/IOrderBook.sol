@@ -14,6 +14,7 @@ interface IOrderBook {
 
     // Custom Errors
     error OrderTooSmall(uint256 amount, uint256 minSize);
+    error InvalidPrice();
     error BatchNotOpen(uint256 batchId, uint8 currentStatus);
     error BatchNotClosed(uint256 batchId);
     error BatchWindowNotElapsed(uint256 currentTime, uint256 endTime);
@@ -32,4 +33,5 @@ interface IOrderBook {
     function closeBatch() external returns (uint256 closedBatchId);
     function rollOrder(uint256 orderId, uint256 newBatchId) external;
     function updateOrderStatus(uint256 orderId, uint8 newStatus) external;
+    function setBatchStatus(uint256 batchId, uint8 newStatus) external;
 }

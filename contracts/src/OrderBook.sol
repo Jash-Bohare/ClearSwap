@@ -5,7 +5,7 @@ import {IOrderBook} from "./interfaces/IOrderBook.sol";
 import {Order, Batch, OrderStatus, BatchStatus} from "./types/DataTypes.sol";
 import {Constants} from "./Constants.sol";
 
-/// @title OrderBook Skeleton
+/// @title OrderBook
 /// @notice Manages order submission, order storage, and batch lifecycle (Spec 04 §4)
 contract OrderBook is IOrderBook {
     uint256 public batchWindowSeconds;
@@ -71,6 +71,8 @@ contract OrderBook is IOrderBook {
     /// @inheritdoc IOrderBook
     function submitOrder(bool isBuy, uint256 amount, uint256 limitPrice) external override returns (uint256 orderId) {
         if (amount < minOrderSize) revert OrderTooSmall(amount, minOrderSize);
+        if (limitPrice == 0) revert InvalidPrice();
+
         Batch storage batch = _batches[currentBatchId];
         if (batch.status != uint8(BatchStatus.OPEN)) revert BatchNotOpen(currentBatchId, batch.status);
 
@@ -96,7 +98,7 @@ contract OrderBook is IOrderBook {
         if (order.trader != msg.sender && msg.sender != owner) revert Unauthorized(msg.sender);
 
         Batch storage batch = _batches[order.batchId];
-        if (batch.status != uint8(BatchStatus.OPEN)) revert OrderNotCancellable(orderId, order.status);
+        if (batch.status != uint8(BatchStatus.OPEN)) revert OrderNotCancellable(orderId, batch.status);
         if (order.status != uint8(OrderStatus.PENDING)) revert OrderNotCancellable(orderId, order.status);
 
         order.status = uint8(OrderStatus.CANCELLED);
@@ -165,5 +167,10 @@ contract OrderBook is IOrderBook {
         Order storage order = _orders[orderId];
         if (order.id == 0) revert OrderNotFound(orderId);
         order.status = newStatus;
+    }
+
+    /// @inheritdoc IOrderBook
+    function setBatchStatus(uint256 batchId, uint8 newStatus) external override onlyAuthorized {
+        _batches[batchId].status = newStatus;
     }
 }
