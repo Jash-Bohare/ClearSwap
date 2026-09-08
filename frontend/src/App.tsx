@@ -1,122 +1,196 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import { Header } from './components/Header';
+import { OrderForm } from './components/OrderForm';
+import { CurrentBatchPanel } from './components/CurrentBatchPanel';
+import { ClearingResultPanel } from './components/ClearingResultPanel';
+import { SandwichComparisonModal } from './components/SandwichComparisonModal';
+import { GasComparisonModal } from './components/GasComparisonModal';
+import { DemoControlBar } from './components/DemoControlBar';
+import type { OrderItem, FillItem, BatchState } from './types';
 
-function App() {
-  const [count, setCount] = useState(0)
+export const App: React.FC = () => {
+  const [currentBatchId, setCurrentBatchId] = useState<number>(1);
+  const [batchStatus, setBatchStatus] = useState<string>('OPEN');
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(45);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [lastClearedBatch, setLastClearedBatch] = useState<BatchState | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
+  const [isSandwichModalOpen, setIsSandwichModalOpen] = useState<boolean>(false);
+  const [isGasModalOpen, setIsGasModalOpen] = useState<boolean>(false);
+  const [isDemoRunning, setIsDemoRunning] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isClosingBatch, setIsClosingBatch] = useState<boolean>(false);
+
+  // Countdown timer simulation
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsRemaining((prev) => (prev > 1 ? prev - 1 : 45));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleConnectWallet = () => {
+    if (!walletAddress) {
+      setWalletAddress('0x71C...392A');
+    } else {
+      setWalletAddress(null);
+    }
+  };
+
+  const handleSubmitOrder = async (isBuy: boolean, amount: number, limitPrice: number) => {
+    setIsSubmitting(true);
+    await new Promise((r) => setTimeout(r, 400));
+
+    const newOrder: OrderItem = {
+      id: orders.length + 1,
+      trader: walletAddress || '0x71C...392A',
+      isBuy,
+      amount,
+      limitPrice,
+      batchId: currentBatchId,
+      status: 'PENDING'
+    };
+
+    setOrders((prev) => [...prev, newOrder]);
+    setIsSubmitting(false);
+  };
+
+  const handleCancelOrder = (orderId: number) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: 'CANCELLED' } : o))
+    );
+  };
+
+  // Run the canonical Spec 03 §17 worked example
+  const handleRunDemo = async () => {
+    setIsDemoRunning(true);
+
+    const demoOrders: OrderItem[] = [
+      { id: 1, trader: '0x1111...1111', traderLabel: 'B1', isBuy: true, amount: 2.0, limitPrice: 3050, batchId: currentBatchId, status: 'PENDING' },
+      { id: 2, trader: '0x2222...2222', traderLabel: 'B2', isBuy: true, amount: 1.0, limitPrice: 3020, batchId: currentBatchId, status: 'PENDING' },
+      { id: 3, trader: '0x3333...3333', traderLabel: 'B3', isBuy: true, amount: 3.0, limitPrice: 2990, batchId: currentBatchId, status: 'PENDING' },
+      { id: 4, trader: '0x4444...4444', traderLabel: 'S1', isBuy: false, amount: 1.5, limitPrice: 2980, batchId: currentBatchId, status: 'PENDING' },
+      { id: 5, trader: '0x5555...5555', traderLabel: 'S2', isBuy: false, amount: 2.0, limitPrice: 3010, batchId: currentBatchId, status: 'PENDING' },
+      { id: 6, trader: '0x6666...6666', traderLabel: 'S3', isBuy: false, amount: 1.0, limitPrice: 3040, batchId: currentBatchId, status: 'PENDING' }
+    ];
+
+    setOrders(demoOrders);
+    await new Promise((r) => setTimeout(r, 600));
+    setIsDemoRunning(false);
+  };
+
+  // Close batch & execute clearing logic
+  const handleCloseBatchNow = async () => {
+    setIsClosingBatch(true);
+    setBatchStatus('CLEARING');
+
+    await new Promise((r) => setTimeout(r, 800));
+
+    // Solve clearing per Spec 03 §17:
+    // P* = 3010
+    // Fills: B1 (2.0), B2 (1.0), S1 (1.2857), S2 (1.7143)
+    const pStar = 3010;
+    const executedFills: FillItem[] = [
+      { orderId: 1, trader: '0x1111...1111', traderLabel: 'B1', isBuy: true, filledAmount: 2.0, clearingPrice: pStar, quoteAmount: 6020.00 },
+      { orderId: 2, trader: '0x2222...2222', traderLabel: 'B2', isBuy: true, filledAmount: 1.0, clearingPrice: pStar, quoteAmount: 3010.00 },
+      { orderId: 4, trader: '0x4444...4444', traderLabel: 'S1', isBuy: false, filledAmount: 1.285714, clearingPrice: pStar, quoteAmount: 3870.00 },
+      { orderId: 5, trader: '0x5555...5555', traderLabel: 'S2', isBuy: false, filledAmount: 1.714286, clearingPrice: pStar, quoteAmount: 5160.00 }
+    ];
+
+    setLastClearedBatch({
+      id: currentBatchId,
+      status: 'SETTLED',
+      startTime: Date.now() - 45000,
+      endTime: Date.now(),
+      orderCount: orders.length,
+      clearingPrice: pStar,
+      fills: executedFills,
+      totalVolume: 3.0
+    });
+
+    const nextBatch = currentBatchId + 1;
+    setCurrentBatchId(nextBatch);
+    setBatchStatus('OPEN');
+    setSecondsRemaining(45);
+    setIsClosingBatch(false);
+  };
+
+  const handleReset = () => {
+    setCurrentBatchId(1);
+    setBatchStatus('OPEN');
+    setSecondsRemaining(45);
+    setOrders([]);
+    setLastClearedBatch(null);
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+      {/* Navbar Header */}
+      <Header
+        currentBatchId={currentBatchId}
+        batchStatus={batchStatus}
+        onOpenSandwichModal={() => setIsSandwichModalOpen(true)}
+        onOpenGasModal={() => setIsGasModalOpen(true)}
+        onRunDemo={handleRunDemo}
+        isDemoRunning={isDemoRunning}
+        walletAddress={walletAddress}
+        onConnectWallet={handleConnectWallet}
+      />
 
-      <div className="ticks"></div>
+      {/* Main Dashboard Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+        {/* Presenter Demo Controller Bar */}
+        <DemoControlBar
+          onRunFullDemo={handleRunDemo}
+          onCloseBatchNow={handleCloseBatchNow}
+          onResetDemo={handleReset}
+          isDemoRunning={isDemoRunning}
+          currentBatchId={currentBatchId}
+        />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        {/* Top Grid: Order Form (Screen 1) & Current Batch Panel (Screen 2) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-5">
+            <OrderForm
+              currentBatchId={currentBatchId}
+              onSubmitOrder={handleSubmitOrder}
+              isSubmitting={isSubmitting}
+            />
+          </div>
+          <div className="lg:col-span-7">
+            <CurrentBatchPanel
+              batchId={currentBatchId}
+              batchStatus={batchStatus}
+              secondsRemaining={secondsRemaining}
+              orders={orders}
+              onCancelOrder={handleCancelOrder}
+              onCloseBatchNow={handleCloseBatchNow}
+              isClosingBatch={isClosingBatch}
+            />
+          </div>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
+        {/* Bottom Panel: Clearing & Settlement View (Screen 3 & 4) */}
+        <ClearingResultPanel
+          lastClearedBatch={lastClearedBatch}
+          onOpenSandwichModal={() => setIsSandwichModalOpen(true)}
+        />
+      </main>
 
-export default App
+      {/* Pitch Modals */}
+      <SandwichComparisonModal
+        isOpen={isSandwichModalOpen}
+        onClose={() => setIsSandwichModalOpen(false)}
+        clearingPrice={lastClearedBatch?.clearingPrice || 3010}
+      />
+
+      <GasComparisonModal
+        isOpen={isGasModalOpen}
+        onClose={() => setIsGasModalOpen(false)}
+      />
+    </div>
+  );
+};
+
+export default App;
