@@ -30,8 +30,11 @@ export const App: React.FC = () => {
 
   const [isAnvilConnected, setIsAnvilConnected] = useState<boolean>(false);
   const [blockNumber, setBlockNumber] = useState<number>(1);
-  const [wethBalance, setWethBalance] = useState<string>('100.0');
-  const [usdcBalance, setUsdcBalance] = useState<string>('300000.0');
+  
+  // User wallet balances (base total and available calculated)
+  const [baseWethBalance, setBaseWethBalance] = useState<number>(100.0);
+  const [baseUsdcBalance, setBaseUsdcBalance] = useState<number>(300000.0);
+  
   const [latestReceipt, setLatestReceipt] = useState<OnChainReceipt | null>(null);
 
   const [isSandwichModalOpen, setIsSandwichModalOpen] = useState<boolean>(false);
@@ -43,7 +46,24 @@ export const App: React.FC = () => {
 
   const client = new OnChainClient();
 
-  // Ref to hold current orders and batch id for auto-closing without stale closures
+  // Active trader address
+  const activeTrader = walletAddress || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+
+  // Calculate locked escrow across all active PENDING orders for the user
+  const activePendingOrders = orders.filter(
+    (o) => o.trader === activeTrader && o.status === 'PENDING'
+  );
+  const lockedWeth = activePendingOrders
+    .filter((o) => !o.isBuy)
+    .reduce((sum, o) => sum + o.amount, 0);
+  const lockedUsdc = activePendingOrders
+    .filter((o) => o.isBuy)
+    .reduce((sum, o) => sum + o.amount * o.limitPrice, 0);
+
+  const availableWeth = Math.max(0, baseWethBalance - lockedWeth);
+  const availableUsdc = Math.max(0, baseUsdcBalance - lockedUsdc);
+
+  // Refs for timer interval to avoid stale closures
   const ordersRef = useRef<OrderItem[]>(orders);
   ordersRef.current = orders;
   const currentBatchIdRef = useRef<number>(currentBatchId);
@@ -53,7 +73,7 @@ export const App: React.FC = () => {
   const isTimerPausedRef = useRef<boolean>(isTimerPaused);
   isTimerPausedRef.current = isTimerPaused;
 
-  // Sync with local Anvil chain
+  // Sync block number and chain health with Anvil
   const syncChainState = async () => {
     const isUp = await client.isChainAlive();
     setIsAnvilConnected(isUp);
@@ -61,12 +81,6 @@ export const App: React.FC = () => {
       try {
         const bNum = await client.getBlockNumber();
         setBlockNumber(bNum);
-        const activeTrader = walletAddress || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-        const bals = await client.getBalances(activeTrader);
-        if (parseFloat(bals.weth) > 0 || parseFloat(bals.usdc) > 0) {
-          setWethBalance(bals.weth);
-          setUsdcBalance(bals.usdc);
-        }
       } catch {
         // ignore
       }
@@ -79,6 +93,26 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [walletAddress]);
 
+  // Initial balance load from chain on connect
+  useEffect(() => {
+    const fetchInitialBalances = async () => {
+      if (isAnvilConnected) {
+        try {
+          const bals = await client.getBalances(activeTrader);
+          const w = parseFloat(bals.weth);
+          const u = parseFloat(bals.usdc);
+          if (w > 0 || u > 0) {
+            setBaseWethBalance(w);
+            setBaseUsdcBalance(u);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+    fetchInitialBalances();
+  }, [isAnvilConnected, activeTrader]);
+
   // Dynamic batch countdown timer with auto-close when time expires and pause support
   useEffect(() => {
     if (isTimerPaused) return;
@@ -87,7 +121,6 @@ export const App: React.FC = () => {
     const timer = setInterval(() => {
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
-          // Auto-trigger batch close
           if (!isClosingBatchRef.current) {
             handleCloseBatchNow();
           }
@@ -125,14 +158,13 @@ export const App: React.FC = () => {
     await syncChainState();
   };
 
-  // Mint faucet tokens
+  // Mint faucet tokens (+100 WETH, +300,000 USDC)
   const handleMintTokens = async () => {
     setIsMinting(true);
-    const activeTrader = walletAddress || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
-    // Local balance increment
-    setWethBalance((prev) => (parseFloat(prev) + 100).toFixed(2));
-    setUsdcBalance((prev) => (parseFloat(prev) + 300000).toFixed(2));
+    // Increment base balances immediately
+    setBaseWethBalance((prev) => prev + 100);
+    setBaseUsdcBalance((prev) => prev + 300000);
 
     if (isAnvilConnected) {
       try {
@@ -147,18 +179,9 @@ export const App: React.FC = () => {
     setIsMinting(false);
   };
 
-  // Submit order on chain + update local escrow balances
+  // Submit order on chain + update escrow
   const handleSubmitOrder = async (isBuy: boolean, amount: number, limitPrice: number) => {
     setIsSubmitting(true);
-    const traderAddr = walletAddress || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-
-    // Escrow balance deduction: lock tokens for order
-    if (isBuy) {
-      const lockQuote = amount * limitPrice;
-      setUsdcBalance((prev) => Math.max(0, parseFloat(prev) - lockQuote).toFixed(2));
-    } else {
-      setWethBalance((prev) => Math.max(0, parseFloat(prev) - amount).toFixed(4));
-    }
 
     let assignedId = orders.length > 0 ? Math.max(...orders.map((o) => o.id)) + 1 : 1;
 
@@ -169,13 +192,13 @@ export const App: React.FC = () => {
         setLatestReceipt(receipt);
         await syncChainState();
       } catch (err) {
-        console.warn('On-chain submit failed, using client simulation:', err);
+        console.warn('On-chain submit fallback to dynamic engine:', err);
       }
     }
 
     const newOrder: OrderItem = {
       id: assignedId,
-      trader: traderAddr,
+      trader: activeTrader,
       isBuy,
       amount,
       limitPrice,
@@ -187,28 +210,15 @@ export const App: React.FC = () => {
     setIsSubmitting(false);
   };
 
-  // Cancel order + refund escrowed balance
+  // Cancel order (escrow is automatically freed via activePendingOrders filter)
   const handleCancelOrder = async (orderId: number) => {
-    const targetOrder = orders.find((o) => o.id === orderId);
-    if (targetOrder && targetOrder.status === 'PENDING') {
-      const activeTrader = walletAddress || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-      if (targetOrder.trader === activeTrader) {
-        // Refund locked tokens
-        if (targetOrder.isBuy) {
-          setUsdcBalance((prev) => (parseFloat(prev) + targetOrder.amount * targetOrder.limitPrice).toFixed(2));
-        } else {
-          setWethBalance((prev) => (parseFloat(prev) + targetOrder.amount).toFixed(4));
-        }
-      }
-    }
-
     if (isAnvilConnected) {
       try {
         const receipt = await client.cancelOrder(orderId);
         setLatestReceipt(receipt);
         await syncChainState();
       } catch (err) {
-        console.warn('On-chain cancel failed:', err);
+        console.warn('On-chain cancel fallback:', err);
       }
     }
 
@@ -217,7 +227,7 @@ export const App: React.FC = () => {
     );
   };
 
-  // Inject canonical Spec 03 §17 worked example
+  // Inject canonical 6-order worked example
   const handleRunDemo = async () => {
     setIsDemoRunning(true);
 
@@ -254,24 +264,31 @@ export const App: React.FC = () => {
     // Compute exact clearing results
     const clearingResult = computeDynamicClearing(currentOrdersList, activeBatch);
 
-    // Settle trader wallet balances for filled orders of active user
-    const activeTrader = walletAddress || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+    // Apply settlement balance changes to base balances for active user fills
+    let deltaWeth = 0;
+    let deltaUsdc = 0;
+
     for (const fill of clearingResult.fills) {
       if (fill.trader === activeTrader) {
         if (fill.isBuy) {
           // Received bought WETH
-          setWethBalance((prev) => (parseFloat(prev) + fill.filledAmount).toFixed(4));
-          // Refund price discount (bid limit - clearingPrice)
-          const matchedOrder = currentOrdersList.find((o) => o.id === fill.orderId);
-          if (matchedOrder && matchedOrder.limitPrice > fill.clearingPrice) {
-            const savings = (matchedOrder.limitPrice - fill.clearingPrice) * fill.filledAmount;
-            setUsdcBalance((prev) => (parseFloat(prev) + savings).toFixed(2));
-          }
+          deltaWeth += fill.filledAmount;
+          // Actual quote cost was fill.filledAmount * clearingPrice
+          // (The locked amount was fill.filledAmount * limitPrice, which is released as order status changes from PENDING to FILLED)
+          const actualCost = fill.filledAmount * fill.clearingPrice;
+          deltaUsdc -= actualCost;
         } else {
-          // Received quote payout USDC
-          setUsdcBalance((prev) => (parseFloat(prev) + fill.quoteAmount).toFixed(2));
+          // Deduct sold WETH from base
+          deltaWeth -= fill.filledAmount;
+          // Receive quote USDC payout
+          deltaUsdc += fill.quoteAmount;
         }
       }
+    }
+
+    if (deltaWeth !== 0 || deltaUsdc !== 0) {
+      setBaseWethBalance((prev) => Math.max(0, prev + deltaWeth));
+      setBaseUsdcBalance((prev) => Math.max(0, prev + deltaUsdc));
     }
 
     setLastClearedBatch({
@@ -306,7 +323,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      {/* Navbar Header with Pitch Triggers, Live Node, Faucet & Balance */}
+      {/* Navbar Header with Pitch Triggers, Live Node, Faucet & Available Balance */}
       <Header
         currentBatchId={currentBatchId}
         batchStatus={batchStatus}
@@ -316,8 +333,8 @@ export const App: React.FC = () => {
         onConnectWallet={handleConnectWallet}
         isAnvilConnected={isAnvilConnected}
         blockNumber={blockNumber}
-        wethBalance={wethBalance}
-        usdcBalance={usdcBalance}
+        wethBalance={availableWeth.toString()}
+        usdcBalance={availableUsdc.toString()}
         onMintTokens={handleMintTokens}
         isMinting={isMinting}
       />

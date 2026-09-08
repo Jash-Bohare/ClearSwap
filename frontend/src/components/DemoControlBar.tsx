@@ -31,7 +31,7 @@ export const DemoControlBar: React.FC<DemoControlBarProps> = ({
         <div>
           <h4 style={{ fontSize: '0.8125rem' }}>Presentation Demo Controller</h4>
           <p style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-            Central controller for injecting test trades, pausing time during pitch, and tuning auction speed
+            Inject test trades, freeze time during pitch, and tune auction batch speed
           </p>
         </div>
       </div>
@@ -103,7 +103,7 @@ export const DemoControlBar: React.FC<DemoControlBarProps> = ({
           title="Inject canonical 6-order worked example from Spec 03 §17"
         >
           <Play size={14} fill="currentColor" />
-          <span>{isDemoRunning ? 'Injecting Orders...' : 'Run §17 Worked Example'}</span>
+          <span>{isDemoRunning ? 'Injecting Orders...' : 'Run 6-Order MEV Demo'}</span>
         </button>
 
         {/* Reset State */}
