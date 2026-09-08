@@ -1,6 +1,6 @@
 # ClearSwap — MEV-Resistant Batch Auction DEX
 
-> **Next-Generation Decentralized Exchange built with Arbitrum Stylus (Rust) and Solidity.**  
+> **Next-Generation Decentralized Exchange built with Arbitrum Stylus (Rust) and Solidity.**
 > Eliminates front-running, sandwich attacks, and MEV extraction by construction through **discrete uniform-price batch auctions**.
 
 ---
@@ -52,9 +52,9 @@ If you are new to DeFi, here is a simple explanation of why traditional DEXs are
 **MEV** stands for **Maximal Extractable Value** (formerly *Miner Extractable Value*). In blockchain networks, miners/validators (or searcher bots watching the pending transaction pool, known as the *mempool*) can choose the order in which transactions get packaged into a block. When they see a profitable opportunity, they reorder, insert, or delay transactions to extract profit from regular users.
 
 ### How Traditional AMMs Work (Sequential Execution)
-Traditional Automated Market Makers (AMMs) use an $x \cdot y = k$ bonding curve where:
+Traditional Automated Market Makers (AMMs) use an $x \times y = k$ bonding curve where:
 - Every trade moves the market price slightly.
-- Trades execute one after another in a straight line: `Tx 1` $\rightarrow$ `Tx 2` $\rightarrow$ `Tx 3`.
+- Trades execute one after another in a straight line: `Tx 1` → `Tx 2` → `Tx 3`.
 
 ```
 Traditional DEX:
@@ -82,7 +82,7 @@ ClearSwap replaces sequential execution with **Discrete Uniform-Price Batch Auct
 ClearSwap Batch Auction:
 Batch Window (e.g. 45s):
   ┌─────────────────────────────────────────────────────────┐
-  │ [User Order 1]  [Bot Order]  [User Order 2]  [User 3]    │
+  │ [User Order 1]  [Bot Order]  [User Order 2]  [User 3]   │
   └──────────────────────────┬──────────────────────────────┘
                              ▼
   ┌─────────────────────────────────────────────────────────┐
@@ -100,7 +100,7 @@ Batch Window (e.g. 45s):
 1. **Accumulation Phase**: While a batch is open (e.g., 45 seconds), traders submit limit buy and sell orders. No orders execute yet.
 2. **Batch Closure**: When the timer expires, the batch is closed. No new orders can enter this batch.
 3. **Uniform Clearing**: An optimization algorithm analyzes all buy and sell curves together to find the single price $P^*$ that maximizes trade volume.
-4. **Simultaneous Settlement**: All eligible trades execute at **$P^*$**. 
+4. **Simultaneous Settlement**: All eligible trades execute at **$P^*$**.
 
 ### The Uniform Clearing Price ($P^*$)
 The **5-Second UX Rule** of ClearSwap is simple:
@@ -130,11 +130,11 @@ In standard EVM Solidity, dynamic arrays, sorting, and intensive loops are extre
 ### Gas Benchmarks: Stylus vs Solidity (~82% Reduction)
 By executing the heavy math inside an **Arbitrum Stylus WebAssembly (WASM)** contract compiled from high-performance Rust, ClearSwap achieves massive gas savings:
 
-| Batch Size ($N$) | Pure Solidity Gas | Stylus Rust WASM Gas | Gas Reduction |
-|:---:|:---:|:---:|:---:|
-| **$N = 2$ Orders** | 17,104 gas | 4,200 gas | **75.4%** |
-| **$N = 6$ Orders** | 57,195 gas | 11,500 gas | **79.9%** |
-| **$N = 10$ Orders** | 102,982 gas | 18,400 gas | **82.1%** |
+| Batch Size (N) | Pure Solidity Gas | Stylus Rust WASM Gas | Gas Reduction |
+|:---|:---:|:---:|:---:|
+| **N = 2 Orders** | 17,104 gas | 4,200 gas | **75.4%** |
+| **N = 6 Orders** | 57,195 gas | 11,500 gas | **79.9%** |
+| **N = 10 Orders** | 102,982 gas | 18,400 gas | **82.1%** |
 
 ---
 
@@ -157,27 +157,27 @@ ClearSwap is architected cleanly with separation of concerns:
                       └────────────────┬────────────────┘
                                        │ closeBatch()
                                        ▼
-                      ┌─────────────────────────────────┐
-                      │       ClearingAdapter.sol       │
-                      │   - Prepares input calldata     │
-                      │   - Calls Stylus WASM Engine    │
-                      │   - Enforces 4 Safety Checks    │
-                      └────────────────┬────────────────┘
+                      ┌────────────────────────────────┐
+                      │       ClearingAdapter.sol      │
+                      │  - Prepares input calldata     │
+                      │  - Calls Stylus WASM Engine    │
+                      │  - Enforces 4 Safety Checks    │
+                      └────────────────┬───────────────┘
                                        │ computeClearing()
                                        ▼
-                      ┌─────────────────────────────────┐
-                      │    Stylus Rust Engine (WASM)    │
-                      │   - Candidate Price Sweep       │
-                      │   - Argmax Volume P* Selection  │
-                      │   - Pro-Rata & Remainder Math   │
-                      └────────────────┬────────────────┘
+                      ┌────────────────────────────────┐
+                      │    Stylus Rust Engine (WASM)   │
+                      │  - Candidate Price Sweep       │
+                      │  - Argmax Volume P* Selection  │
+                      │  - Pro-Rata & Remainder Math   │
+                      └────────────────┬───────────────┘
                                        │ ClearingResult
                                        ▼
                       ┌─────────────────────────────────┐
                       │         Settlement.sol          │
-                      │   - Pulls tokens (ERC20 transfer)│
-                      │   - Credits traders atomically  │
-                      │   - Triggers order rollovers    │
+                      │  - Pulls tokens (ERC20 transfer)│
+                      │  - Credits traders atomically   │
+                      │  - Triggers order rollovers     │
                       └─────────────────────────────────┘
 ```
 
@@ -203,7 +203,7 @@ ClearSwap is architected cleanly with separation of concerns:
 
 4. **`stylus-engine/src/lib.rs` (Rust WASM)**:
    - Uses sorted `Vec<u64>` candidate price arrays (**zero `HashMap`/`HashSet`** for deterministic execution).
-   - Resolves ties: 1) Maximize Volume $\rightarrow$ 2) Minimize Imbalance $\rightarrow$ 3) Lowest candidate price.
+   - Resolves ties: 1) Maximize Volume → 2) Minimize Imbalance → 3) Lowest candidate price.
 
 ---
 
@@ -222,31 +222,31 @@ Let's walk through the canonical **Spec 03 §17** worked example implemented in 
   - `S3`: Sell 1.0 WETH @ min limit **$3,040**
 
 ### Candidate Price Sweep:
-The engine builds candidate price levels and computes supply/demand:
+The engine builds candidate price levels and computes cumulative supply and demand:
 
-| Candidate Price ($P$) | Eligible Buy Demand | Eligible Sell Supply | Cleared Volume $\min(\text{Buy}, \text{Sell})$ | Imbalance $|\text{Buy} - \text{Sell}|$ |
-|:---:|:---:|:---:|:---:|:---:|
-| **$2,980** | 6.0 WETH (B1+B2+B3) | 1.5 WETH (S1) | 1.5 WETH | 4.5 WETH |
-| **$2,990** | 6.0 WETH (B1+B2+B3) | 1.5 WETH (S1) | 1.5 WETH | 4.5 WETH |
-| **$3,010** | **3.0 WETH** (B1+B2) | **3.5 WETH** (S1+S2) | **3.0 WETH (MAX)** | **0.5 WETH** |
-| **$3,020** | 3.0 WETH (B1+B2) | 3.5 WETH (S1+S2) | 3.0 WETH (MAX) | 0.5 WETH |
-| **$3,040** | 2.0 WETH (B1) | 4.5 WETH (S1+S2+S3) | 2.0 WETH | 2.5 WETH |
-| **$3,050** | 2.0 WETH (B1) | 4.5 WETH (S1+S2+S3) | 2.0 WETH | 2.5 WETH |
+| Candidate Price (P) | Eligible Buy Demand | Eligible Sell Supply | Cleared Volume: min(Buy, Sell) | Imbalance: abs(Buy - Sell) |
+|:---|:---|:---|:---|:---|
+| **$2,980** | 6.0 WETH (B1 + B2 + B3) | 1.5 WETH (S1) | 1.5 WETH | 4.5 WETH |
+| **$2,990** | 6.0 WETH (B1 + B2 + B3) | 1.5 WETH (S1) | 1.5 WETH | 4.5 WETH |
+| **$3,010** | **3.0 WETH** (B1 + B2) | **3.5 WETH** (S1 + S2) | **3.0 WETH (MAX)** | **0.5 WETH** |
+| **$3,020** | 3.0 WETH (B1 + B2) | 3.5 WETH (S1 + S2) | 3.0 WETH (MAX) | 0.5 WETH |
+| **$3,040** | 2.0 WETH (B1) | 4.5 WETH (S1 + S2 + S3) | 2.0 WETH | 2.5 WETH |
+| **$3,050** | 2.0 WETH (B1) | 4.5 WETH (S1 + S2 + S3) | 2.0 WETH | 2.5 WETH |
 
 ### Selection of $P^* = 3010$:
 - Both **$3,010** and **$3,020** tie on maximum volume (3.0 WETH) and minimum imbalance (0.5 WETH).
-- **Tie-Break Rule**: The engine chooses the **lowest price** $\rightarrow$ **$P^* = \$3,010$**.
+- **Tie-Break Rule**: The engine chooses the **lowest price** → **$P^* = \$3,010$**.
 
 ### Fill Allocations:
-- **Buy Side (Total 3.0 WETH demand @ $P^* \ge 3010$)**:
+- **Buy Side (Total 3.0 WETH demand @ Limit $\ge$ $3,010)**:
   - `B1` is 100% filled: **2.0 WETH**
   - `B2` is 100% filled: **1.0 WETH**
-  - `B3` limit price ($2,990) is below $P^* \rightarrow$ **0 filled (rolls to Batch #2)**
-- **Sell Side (Total 3.5 WETH supply @ $P^* \le 3010$)**:
+  - `B3` limit price ($2,990) is below $P^*$ → **0 filled (rolls to Batch #2)**
+- **Sell Side (Total 3.5 WETH supply @ Limit $\le$ $3,010)**:
   - Pro-rata rationing factor: $3.0 / 3.5 = 85.714\%$
   - `S1` filled: **1.285714 WETH** (Unfilled 0.214286 rolls to Batch #2)
   - `S2` filled: **1.714286 WETH** (Unfilled 0.285714 rolls to Batch #2)
-  - `S3` limit price ($3,040) is above $P^* \rightarrow$ **0 filled (rolls to Batch #2)**
+  - `S3` limit price ($3,040) is above $P^*$ → **0 filled (rolls to Batch #2)**
 
 ---
 
