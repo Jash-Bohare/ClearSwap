@@ -1,15 +1,29 @@
 import { ethers } from 'ethers';
 
+export const ARBITRUM_SEPOLIA_CONFIG = {
+  rpcUrl: 'https://arb-sepolia.g.alchemy.com/v2/B9O_PINbPxUHeQq3guVMc',
+  chainId: 421614,
+  chainName: 'Arbitrum Sepolia',
+  blockExplorerUrl: 'https://sepolia.arbiscan.io',
+  addresses: {
+    weth: '0xFd36a6C073A99895B9f2750Bb8D00dE3f739FaB4',
+    usdc: '0xb59C422eAA62016E3ABc7c3C00aa06549b796507',
+    orderBook: '0xC78fcb175A6Ca05A837B231254178F609BECB10a',
+    clearingAdapter: '0x790DF89a94E00E5177D34f6451da84Dc3085cc1f',
+    settlement: '0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066'
+  }
+};
+
 export const LOCAL_CHAIN_CONFIG = {
   rpcUrl: 'http://127.0.0.1:8545',
   chainId: 31337,
   chainName: 'Anvil Localhost',
   addresses: {
-    weth: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    usdc: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-    orderBook: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-    clearingAdapter: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
-    settlement: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9'
+    weth: '0xFd36a6C073A99895B9f2750Bb8D00dE3f739FaB4',
+    usdc: '0xb59C422eAA62016E3ABc7c3C00aa06549b796507',
+    orderBook: '0xC78fcb175A6Ca05A837B231254178F609BECB10a',
+    clearingAdapter: '0x790DF89a94E00E5177D34f6451da84Dc3085cc1f',
+    settlement: '0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066'
   }
 };
 
@@ -38,9 +52,9 @@ export const ERC20_ABI = [
 
 export async function checkAnvilNode(): Promise<boolean> {
   try {
-    const provider = new ethers.JsonRpcProvider(LOCAL_CHAIN_CONFIG.rpcUrl);
+    const provider = new ethers.JsonRpcProvider(ARBITRUM_SEPOLIA_CONFIG.rpcUrl);
     const network = await provider.getNetwork();
-    return Number(network.chainId) === LOCAL_CHAIN_CONFIG.chainId;
+    return Number(network.chainId) === ARBITRUM_SEPOLIA_CONFIG.chainId || Number(network.chainId) === LOCAL_CHAIN_CONFIG.chainId;
   } catch {
     return false;
   }

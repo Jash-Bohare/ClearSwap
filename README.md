@@ -45,6 +45,22 @@ To make complex batch-clearing algorithms affordable on-chain, ClearSwap utilize
 
 ---
 
+
+---
+
+## 🌐 Live Arbitrum Sepolia Testnet Deployments
+
+ClearSwap is deployed on the **Arbitrum Sepolia Testnet** (Chain ID: `421614`):
+
+| Contract | Address | Arbiscan Link |
+| :--- | :--- | :--- |
+| **OrderBook** | `0xC78fcb175A6Ca05A837B231254178F609BECB10a` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0xC78fcb175A6Ca05A837B231254178F609BECB10a) |
+| **Settlement** | `0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066) |
+| **ClearingAdapter** | `0x790DF89a94E00E5177D34f6451da84Dc3085cc1f` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0x790DF89a94E00E5177D34f6451da84Dc3085cc1f) |
+| **MockWETH** | `0xFd36a6C073A99895B9f2750Bb8D00dE3f739FaB4` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0xFd36a6C073A99895B9f2750Bb8D00dE3f739FaB4) |
+| **MockUSDC** | `0xb59C422eAA62016E3ABc7c3C00aa06549b796507` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0xb59C422eAA62016E3ABc7c3C00aa06549b796507) |
+
+
 ## 2. A Beginner's Guide to MEV & Sandwich Attacks
 
 If you are new to DeFi, here is a simple explanation of why traditional DEXs are vulnerable and why ClearSwap was built.
