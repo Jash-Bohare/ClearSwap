@@ -50,16 +50,16 @@ To make complex batch-clearing algorithms affordable on-chain, ClearSwap utilize
 
 ## 🌐 Live Arbitrum Sepolia Testnet Deployments
 
-ClearSwap is deployed on the **Arbitrum Sepolia Testnet** (Chain ID: `421614`):
+ClearSwap smart contracts and the Rust Stylus WASM engine are deployed, active, and verified on the **Arbitrum Sepolia Testnet** (Chain ID: `421614`):
 
-| Contract | Address | Arbiscan Link |
+| Contract | Address | Verification Status & Arbiscan Link |
 | :--- | :--- | :--- |
-| **ClearingEngine (Stylus WASM)** | `0x46BCC88C60eed6395bCF08d2beAdD51c1873B8dB` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0x46BCC88C60eed6395bCF08d2beAdD51c1873B8dB) |
-| **OrderBook** | `0xC78fcb175A6Ca05A837B231254178F609BECB10a` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0xC78fcb175A6Ca05A837B231254178F609BECB10a) |
-| **Settlement** | `0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066) |
-| **ClearingAdapter** | `0x790DF89a94E00E5177D34f6451da84Dc3085cc1f` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0x790DF89a94E00E5177D34f6451da84Dc3085cc1f) |
-| **MockWETH** | `0xFd36a6C073A99895B9f2750Bb8D00dE3f739FaB4` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0xFd36a6C073A99895B9f2750Bb8D00dE3f739FaB4) |
-| **MockUSDC** | `0xb59C422eAA62016E3ABc7c3C00aa06549b796507` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0xb59C422eAA62016E3ABc7c3C00aa06549b796507) |
+| **OrderBook** | `0xC78fcb175A6Ca05A837B231254178F609BECB10a` | [✅ **Verified on Arbiscan**](https://sepolia.arbiscan.io/address/0xC78fcb175A6Ca05A837B231254178F609BECB10a#code) |
+| **Settlement** | `0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066` | [✅ **Verified on Arbiscan**](https://sepolia.arbiscan.io/address/0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066#code) |
+| **ClearingAdapter** | `0x790DF89a94E00E5177D34f6451da84Dc3085cc1f` | [✅ **Verified on Arbiscan**](https://sepolia.arbiscan.io/address/0x790DF89a94E00E5177D34f6451da84Dc3085cc1f#code) |
+| **MockWETH** | `0xFd36a6C073A99895B9f2750Bb8D00dE3f739FaB4` | [✅ **Verified on Arbiscan**](https://sepolia.arbiscan.io/address/0xFd36a6C073A99895B9f2750Bb8D00dE3f739FaB4#code) |
+| **MockUSDC** | `0xb59C422eAA62016E3ABc7c3C00aa06549b796507` | [✅ **Verified on Arbiscan**](https://sepolia.arbiscan.io/address/0xb59C422eAA62016E3ABc7c3C00aa06549b796507#code) |
+| **ClearingEngine (Stylus WASM)** | `0x46BCC88C60eed6395bCF08d2beAdD51c1873B8dB` | [⚡ **Stylus Program**](https://sepolia.arbiscan.io/address/0x46BCC88C60eed6395bCF08d2beAdD51c1873B8dB) • [🔗 **Activation Tx**](https://sepolia.arbiscan.io/tx/0x6e6f3be1e21ec25099f636299ea8f82b8c9695e2466bb11ea679cd166508c28b) |
 
 
 ## 2. A Beginner's Guide to MEV & Sandwich Attacks
