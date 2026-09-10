@@ -66,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
             title={isAnvilConnected ? 'Connected to local Anvil EVM (Chain ID 31337)' : 'Running in browser Stylus simulation mode'}
           >
             <Server size={13} />
-            <span>{isAnvilConnected ? `Anvil Live (#${blockNumber})` : 'Stylus Sim Mode'}</span>
+            <span>{isAnvilConnected ? `Arbitrum Sepolia (#${blockNumber})` : 'Stylus Sim Mode'}</span>
           </div>
 
           {/* Trader Wallet Balance & Dev Faucet */}
