@@ -54,6 +54,7 @@ ClearSwap is deployed on the **Arbitrum Sepolia Testnet** (Chain ID: `421614`):
 
 | Contract | Address | Arbiscan Link |
 | :--- | :--- | :--- |
+| **ClearingEngine (Stylus WASM)** | `0x46BCC88C60eed6395bCF08d2beAdD51c1873B8dB` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0x46BCC88C60eed6395bCF08d2beAdD51c1873B8dB) |
 | **OrderBook** | `0xC78fcb175A6Ca05A837B231254178F609BECB10a` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0xC78fcb175A6Ca05A837B231254178F609BECB10a) |
 | **Settlement** | `0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0x099B5dDFa5Ff6682951A9DD1c06b9eA622D89066) |
 | **ClearingAdapter** | `0x790DF89a94E00E5177D34f6451da84Dc3085cc1f` | [View on Arbiscan](https://sepolia.arbiscan.io/address/0x790DF89a94E00E5177D34f6451da84Dc3085cc1f) |

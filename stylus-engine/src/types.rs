@@ -1,6 +1,8 @@
 //! Core Solidity ABI types for ClearSwap (Spec 04 §2, Spec 05 §2–§3)
 use alloy_sol_types::sol;
 use stylus_sdk::abi::{AbiType, ConstString};
+#[cfg(feature = "export-abi")]
+use stylus_sdk::abi::export::internal::{InnerTypes, InnerType};
 
 sol! {
     /// Matches `Order` struct from `DataTypes.sol` (Spec 04 §2)
@@ -58,4 +60,25 @@ impl AbiType for Fill {
 impl AbiType for ClearingResult {
     type SolType = Self;
     const ABI: ConstString = ConstString::new("(uint256,uint256,(uint256,address,bool,uint256,uint256)[])");
+}
+
+#[cfg(feature = "export-abi")]
+impl InnerTypes for Order {
+    fn inner_types() -> Vec<InnerType> {
+        vec![]
+    }
+}
+
+#[cfg(feature = "export-abi")]
+impl InnerTypes for Fill {
+    fn inner_types() -> Vec<InnerType> {
+        vec![]
+    }
+}
+
+#[cfg(feature = "export-abi")]
+impl InnerTypes for ClearingResult {
+    fn inner_types() -> Vec<InnerType> {
+        vec![]
+    }
 }
